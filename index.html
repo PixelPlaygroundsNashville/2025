@@ -1,0 +1,2075 @@
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"> {/* Prevent zoom issues on mobile */}
+    <title>Pixel Playgrounds // [CORE COMMAND v6] // Nashville // System Online</title>
+    <meta name="description" content="Pixel Playgrounds Nashville: Elite podcast studio installations & strategic consultation for Nashville creators. Turnkey solutions, professional results. Access FREE consultation: (615) 606-4969. Experience the future of sound.">
+    <meta property="og:title" content="Pixel Playgrounds Nashville // Professional Podcast Studio Installations // Command V6">
+    <meta property="og:description" content="Expert planning, hardware procurement, and installation for podcasters in Nashville. Get your turnkey studio solution. Free consultation available. Engage hyperdrive.">
+    <meta property="og:image" content="https://placehold.co/1200x630/000205/0affa0?text=Pixel+Playgrounds+CORE+V6+Online&font=orbitron"> {/* Updated OG Image */}
+    
+    <!-- 
+    !!! IMPORTANT !!! 
+    REPLACE THE URL BELOW WITH YOUR ACTUAL GITHUB PAGES URL AFTER DEPLOYMENT! 
+    Format: https://your-github-username.github.io/your-repo-name/
+    -->
+    <meta property="og:url" content="https://YOUR_USERNAME.github.io/YOUR_REPO_NAME/"> 
+
+    <meta name="twitter:card" content="summary_large_image">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 rx=%2215%22 fill=%22%23010409%22/><path d=%22M30 70 L30 30 L70 30 L70 50 L50 50 L50 70 Z%22 fill=%22%23ffdf3a%22/><path d=%22M70 70 L70 60 L60 60 L60 70 Z%22 fill=%22%230cb7e2%22/><animateTransform attributeName=%22transform%22 type=%22rotate%22 from=%220 50 50%22 to=%22-15 50 50%22 dur=%220.8s%22 repeatCount=%22indefinite%22 additive=%22sum%22 accumulate=%22sum%22/><animate attributeName=%22opacity%22 values=%221;0.5;1%22 dur=%221.5s%22 repeatCount=%22indefinite%22/></svg>"> {/* Enhanced Favicon */}
+
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Roboto+Condensed:wght@400;700&display=swap" rel="stylesheet">
+
+    {/* --- Core Libraries --- */}
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    {/* --- Post Processing for Bloom/Effects --- */}
+    <script src="https://unpkg.com/three@0.128.0/examples/js/postprocessing/EffectComposer.js"></script>
+    <script src="https://unpkg.com/three@0.128.0/examples/js/postprocessing/RenderPass.js"></script>
+    <script src="https://unpkg.com/three@0.128.0/examples/js/postprocessing/ShaderPass.js"></script>
+    <script src="https://unpkg.com/three@0.128.0/examples/js/shaders/CopyShader.js"></script>
+    <script src="https://unpkg.com/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
+    {/* --- Audio Engine --- */}
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+    {/* --- Animation Engine (WAY better control) --- */}
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.9.1/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.9.1/ScrollTrigger.min.js"></script>
+
+    <style>
+        /* --- Cyberpunk Theme CSS V6 --- */
+        :root {
+            --color-background: #000205; /* Absolute Black */
+            --color-primary: #0affa0;   /* Vibrant Cyan/Green */
+            --color-secondary: #ff40a0; /* Hot Pink */
+            --color-tertiary: #a060ff;  /* Electric Purple */
+            --color-accent: #fafa40;   /* Electric Yellow */
+            --color-text: #e8f0f8;      /* Slightly Brighter Text */
+            --color-text-muted: #7a8c9c; /* Muted Blue/Grey */
+            --font-heading: 'Orbitron', sans-serif;
+            --font-body: 'Roboto Condensed', sans-serif;
+            --color-primary-rgb: 10, 255, 160;
+            --color-secondary-rgb: 255, 64, 160;
+            --color-tertiary-rgb: 160, 96, 255;
+            --color-accent-rgb: 250, 250, 64;
+            --color-text-muted-rgb: 122, 140, 156;
+        }
+        html { scroll-behavior: smooth; }
+        body {
+            font-family: var(--font-body);
+            background-color: var(--color-background);
+            color: var(--color-text);
+            overflow-x: hidden;
+            font-size: 16px;
+            line-height: 1.6;
+            cursor: crosshair; /* Thematic cursor */
+            opacity: 0; /* Start hidden, fade in after supernova */
+            transition: opacity 1s ease-in-out 1s; /* Delay fade-in */
+        }
+        body.loaded { opacity: 1; }
+
+        /* --- Supernova Container --- */
+        #supernova-container {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 10000; /* Highest */
+            background-color: #000; /* Start black */
+            pointer-events: none; /* Allow clicks through when faded */
+            opacity: 1;
+            transition: opacity 1.5s ease-out; /* Fade out transition */
+        }
+        #supernova-container.fade-out { opacity: 0; }
+        #supernova-canvas { display: block; width: 100%; height: 100%; }
+
+        /* --- Background Canvas --- */
+        #galaxy-bg { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; display: block; opacity: 0.8; }
+
+        /* --- Content Wrapper & Scanlines --- */
+        .content-wrapper { position: relative; z-index: 1; }
+        .content-wrapper::before { /* Enhanced Scanlines */
+            content: ""; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0;
+            background-image: linear-gradient(rgba(var(--color-primary-rgb), 0.04) 1px, transparent 1px);
+            background-size: 1px 3px; /* Thicker lines */
+            opacity: 0.15; pointer-events: none;
+            animation: flicker 0.08s infinite alternate, scanmove 15s linear infinite;
+        }
+        @keyframes flicker { 0% { opacity: 0.1; } 100% { opacity: 0.2; } }
+        @keyframes scanmove { 0% { background-position-y: 0; } 100% { background-position-y: 30px; } }
+
+        /* --- HUD Elements --- */
+        .hud-element {
+            position: fixed; font-family: monospace; font-size: 0.7rem;
+            color: rgba(var(--color-primary-rgb), 0.6);
+            text-shadow: 0 0 4px rgba(var(--color-primary-rgb), 0.7);
+            pointer-events: none; z-index: 100;
+            opacity: 0; /* Start hidden */
+            transform: translateY(10px); /* Start slightly down */
+            /* Animation controlled by GSAP */
+        }
+        .hud-bracket { border: 1px solid rgba(var(--color-primary-rgb), 0.4); width: 20px; height: 20px; display: inline-block; margin: 2px; }
+        .hud-bracket-tl { border-right: none; border-bottom: none; }
+        .hud-bracket-tr { border-left: none; border-bottom: none; margin-left: auto; }
+        .hud-bracket-bl { border-right: none; border-top: none; }
+        .hud-bracket-br { border-left: none; border-top: none; margin-left: auto; }
+        .hud-top-left { top: 1rem; left: 1rem; }
+        .hud-top-right { top: 1rem; right: 1rem; text-align: right; }
+        .hud-bottom-left { bottom: 1rem; left: 1rem; }
+        .hud-bottom-right { bottom: 1rem; right: 1rem; text-align: right; }
+
+        /* --- Typography & Glitch --- */
+        h1, h2, h3, h4, h5, h6 { font-family: var(--font-heading); color: var(--color-text); letter-spacing: 0.08em; text-transform: uppercase; position: relative; }
+        .glitch-heading { position: relative; } /* No ::before/::after needed if using JS glitch */
+        #hero-headline { display: inline-block; perspective: 400px; }
+        .char {
+            display: inline-block; opacity: 0;
+            transform-style: preserve-3d;
+            /* Animation controlled by GSAP */
+        }
+
+        /* --- Layout & Glow --- */
+        .container-command { max-width: 1200px; margin: 0 auto; padding: 0 1.5rem; }
+        .glow-primary { text-shadow: 0 0 8px var(--color-primary), 0 0 18px var(--color-primary), 0 0 30px var(--color-primary); }
+        .glow-secondary { text-shadow: 0 0 8px var(--color-secondary), 0 0 18px var(--color-secondary), 0 0 30px var(--color-secondary); }
+        .glow-tertiary { text-shadow: 0 0 8px var(--color-tertiary), 0 0 18px var(--color-tertiary), 0 0 30px var(--color-tertiary); }
+        .glow-accent { text-shadow: 0 0 8px var(--color-accent), 0 0 18px var(--color-accent), 0 0 30px var(--color-accent); }
+
+        /* --- Data Slate --- */
+        .data-slate {
+            background: rgba(8, 20, 40, 0.92); /* Slightly bluer/darker */
+            backdrop-filter: blur(10px) saturate(120%); /* More saturation */
+            border: 1px solid rgba(var(--color-primary-rgb), 0.5);
+            box-shadow: inset 0 0 25px rgba(0,0,0,0.8), 0 8px 15px rgba(0,0,0,0.6);
+            padding: 1.75rem 2rem; margin-bottom: 2rem; border-radius: 6px;
+            position: relative; overflow: hidden;
+            background-image: linear-gradient(rgba(var(--color-primary-rgb), 0.05) 1px, transparent 1px),
+                              linear-gradient(90deg, rgba(var(--color-primary-rgb), 0.05) 1px, transparent 1px);
+            background-size: 40px 40px;
+            transition: transform 0.4s cubic-bezier(0.165, 0.84, 0.44, 1),
+                        border-color 0.4s ease,
+                        box-shadow 0.4s ease;
+            will-change: transform, box-shadow; /* Perf hint */
+        }
+        .data-slate:hover {
+            transform: translateY(-8px) scale(1.02) rotateX(2deg);
+            border-color: rgba(var(--color-primary-rgb), 1);
+            box-shadow: inset 0 0 18px rgba(0,0,0,0.7),
+                        0 18px 35px rgba(var(--color-primary-rgb), 0.45);
+        }
+
+        /* --- Warning Border Pulse --- */
+        .warning-border {
+            border: 2px solid;
+            border-image-slice: 1;
+            border-image-source: linear-gradient(to bottom right, var(--color-accent), var(--color-secondary));
+            box-shadow: 0 0 18px rgba(var(--color-accent-rgb), 0.6), 0 0 12px rgba(var(--color-secondary-rgb), 0.6);
+            animation: pulse-border-warning 1.5s infinite alternate cubic-bezier(0.68, -0.55, 0.27, 1.55);
+        }
+        @keyframes pulse-border-warning {
+            0% { box-shadow: 0 0 10px rgba(var(--color-accent-rgb), 0.4), 0 0 6px rgba(var(--color-secondary-rgb), 0.4); opacity: 0.8; transform: scale(1); }
+            100% { box-shadow: 0 0 40px rgba(var(--color-accent-rgb), 1), 0 0 30px rgba(var(--color-secondary-rgb), 1); opacity: 1; transform: scale(1.01); }
+        }
+
+        /* --- Header/Bridge --- */
+        #main-bridge {
+            background: linear-gradient(to bottom, rgba(var(--color-background), 0.9), rgba(var(--color-background), 0.85));
+            backdrop-filter: blur(18px);
+            border-bottom: 3px solid var(--color-primary);
+            box-shadow: 0 5px 30px rgba(var(--color-primary-rgb), 0.4);
+            position: sticky; top: 0; z-index: 50; padding: 0.75rem 0;
+        }
+        .bridge-logo h1 { font-size: clamp(1.6rem, 4vw, 2rem); letter-spacing: 0.12em; }
+        .bridge-logo p { color: var(--color-accent); font-size: 0.7rem; letter-spacing: 0.18em; opacity: 0.8; }
+        .nav-link {
+            font-family: var(--font-heading); color: var(--color-text-muted);
+            transition: all 0.3s ease-out; font-weight: 700;
+            font-size: clamp(0.7rem, 2vw, 0.85rem); letter-spacing: 0.09em;
+            padding: 0.7rem 1rem; border-radius: 4px; text-transform: uppercase;
+            border: 1px solid transparent; position: relative; overflow: hidden;
+            display: inline-flex; align-items: center; gap: 0.4em;
+        }
+        .nav-link::before { /* Underline effect */
+            content: ''; position: absolute; bottom: 0px; left: 0; width: 100%; height: 3px;
+            background: var(--color-accent);
+            box-shadow: 0 0 10px var(--color-accent), 0 0 15px var(--color-accent);
+            transform: scaleX(0); transform-origin: left;
+            transition: transform 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+        }
+        .nav-link:hover { color: var(--color-text); text-shadow: 0 0 12px var(--color-accent); }
+        .nav-link:hover::before { transform: scaleX(1); transform-origin: right; }
+        .nav-link.insta-link:hover::before { background: var(--color-secondary); box-shadow: 0 0 10px var(--color-secondary), 0 0 15px var(--color-secondary); }
+        .nav-link.insta-link:hover { text-shadow: 0 0 12px var(--color-secondary); }
+        .nav-link.holo-call-link:hover::before { background: var(--color-accent); box-shadow: 0 0 10px var(--color-accent), 0 0 15px var(--color-accent); }
+        .nav-link.holo-call-link:hover { text-shadow: 0 0 12px var(--color-accent); }
+
+        /* --- Buttons --- */
+        .btn {
+            display: inline-flex; align-items: center; justify-content: center; gap: 0.6em;
+            font-family: var(--font-heading); border-radius: 5px;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); /* More bouncy */
+            text-align: center; letter-spacing: 0.1em; text-transform: uppercase;
+            cursor: pointer; position: relative; overflow: hidden;
+            padding: 0.9rem 2rem; font-size: clamp(0.9rem, 2.5vw, 1.05rem);
+            border-width: 2px; border-style: solid; transform-style: preserve-3d;
+            backface-visibility: hidden; will-change: transform, box-shadow;
+        }
+        .btn svg { width: 1.15em; height: 1.15em; }
+        .btn-directive { /* Primary CTA */
+            font-weight: 900; padding: 1.1rem 2.8rem;
+            border-color: var(--color-accent);
+            background-color: var(--color-accent); color: var(--color-background);
+            font-size: clamp(1rem, 2.8vw, 1.15rem);
+            box-shadow: 0 0 20px rgba(var(--color-accent-rgb), 0.6), inset 0 0 10px rgba(255,255,255,0.4);
+        }
+        .btn-directive:hover {
+            box-shadow: 0 0 40px rgba(var(--color-accent-rgb), 1), 0 0 25px rgba(var(--color-secondary-rgb), 0.7), inset 0 0 15px rgba(255,255,255,0.5);
+            transform: translateY(-6px) scale(1.04);
+            background-color: var(--color-accent); border-color: var(--color-secondary);
+            filter: brightness(1.1);
+        }
+        .btn-secondary-ops { /* Secondary action */
+            font-weight: 700; padding: 0.8rem 1.9rem;
+            border-color: var(--color-tertiary); background-color: transparent;
+            color: var(--color-tertiary);
+            font-size: clamp(0.85rem, 2.2vw, 0.95rem);
+        }
+        .btn-secondary-ops:hover {
+            background-color: var(--color-tertiary); color: var(--color-background);
+            box-shadow: 0 0 30px rgba(var(--color-tertiary-rgb), 0.8);
+            transform: scale(1.08) translateY(-4px);
+        }
+
+        /* --- Section Headings --- */
+        .section-heading { text-align: center; font-weight: 900; font-size: clamp(2.5rem, 8vw, 3.5rem); margin-bottom: 1rem; letter-spacing: 0.08em; }
+        .section-subheading { text-align: center; font-weight: 700; font-size: clamp(1.4rem, 5vw, 1.8rem); margin-bottom: 3.5rem; letter-spacing: 0.07em; color: var(--color-primary); opacity: 0.9; }
+
+        /* --- Data Slate Content --- */
+        .data-slate h4 { color: var(--color-primary); margin-bottom: 1.2rem; font-weight: 700; font-size: 1.25rem; text-transform: uppercase; border-bottom: 1px solid rgba(var(--color-primary-rgb), 0.5); padding-bottom: 0.6rem; letter-spacing: 0.08em; display: flex; align-items: center; gap: 0.5em; }
+        .data-slate h5 { color: var(--color-tertiary); margin-top: 1.8rem; margin-bottom: 0.8rem; font-weight: 600; font-size: 1.1rem; text-transform: uppercase; letter-spacing: 0.07em; display: flex; align-items: center; gap: 0.5em; }
+        .data-slate ul { list-style: none; padding-left: 0; margin-top: 1.2rem; }
+        .data-slate ul li { margin-bottom: 1rem; padding-left: 2.2rem; position: relative; font-size: 1rem; line-height: 1.7; color: var(--color-text); }
+        .data-slate ul li::before { /* Enhanced bullet */
+             content: ''; position: absolute; left: 0; top: 0.35em; width: 10px; height: 10px;
+             background-color: var(--color-accent); border-radius: 2px; /* Square-ish */
+             box-shadow: 0 0 8px var(--color-accent);
+             animation: pulse-bullet 1.8s infinite ease-in-out;
+             transform: rotate(45deg); /* Diamond shape */
+        }
+        @keyframes pulse-bullet { 0%, 100% { transform: scale(1) rotate(45deg); opacity: 1; background-color: var(--color-accent); } 50% { transform: scale(0.6) rotate(45deg); opacity: 0.7; background-color: var(--color-secondary); } }
+        .data-slate ul ul { margin-top: 0.7rem; margin-left: 1.2rem; }
+        .data-slate ul ul li::before { background-color: var(--color-primary); box-shadow: 0 0 8px var(--color-primary); animation-duration: 2.1s; }
+        .data-slate p { margin-bottom: 1.2rem; color: var(--color-text); font-size: 1rem; line-height: 1.7; }
+        .data-slate strong { color: var(--color-accent); font-weight: 700; }
+        .data-slate em { color: var(--color-secondary); font-style: normal; font-weight: 600; }
+        .data-slate a { /* Enhanced Link */
+            color: var(--color-tertiary); text-decoration: none;
+            border-bottom: 1px dashed rgba(var(--color-tertiary-rgb), 0.7);
+            transition: all 0.25s ease; display: inline-flex; align-items: center; gap: 0.3em;
+            position: relative;
+        }
+        .data-slate a::after { /* Bottom border animation */
+            content: ''; position: absolute; bottom: -2px; left: 0; width: 100%; height: 1px;
+            background: var(--color-accent); transform: scaleX(0); transform-origin: left;
+            transition: transform 0.3s ease;
+        }
+        .data-slate a:hover { color: var(--color-accent); border-bottom-color: transparent; text-shadow: 0 0 10px var(--color-accent); }
+        .data-slate a:hover::after { transform: scaleX(1); }
+        .data-slate code {
+            background-color: rgba(var(--color-text-muted-rgb), 0.2); color: var(--color-primary);
+            padding: 0.25em 0.6em; border-radius: 4px; font-size: 0.9em;
+            font-family: 'Courier New', Courier, monospace;
+            border: 1px solid rgba(var(--color-primary-rgb), 0.3);
+            box-shadow: inset 0 0 5px rgba(var(--color-primary-rgb), 0.2);
+            word-break: break-all; /* Allow long code blocks to wrap */
+        }
+        .data-slate .slate-graphic { border: 1px solid rgba(var(--color-primary-rgb), 0.4); filter: drop-shadow(0 3px 6px rgba(0,0,0,0.5)); transition: all 0.35s ease; border-radius: 5px; max-width: 100%; height: auto; background: rgba(var(--color-primary-rgb), 0.08); padding: 0.6rem; opacity: 0.85; margin-top: 0.5rem; margin-bottom: 1rem;}
+        .data-slate .slate-graphic:hover { transform: scale(1.06) rotate(-1.5deg); border-color: rgba(var(--color-primary-rgb), 0.8); filter: drop-shadow(0 6px 12px rgba(var(--color-primary-rgb), 0.5)); opacity: 1; }
+        .img-float-right { float: right; max-width: 160px; margin-left: 1.8rem; margin-bottom: 0.8rem; }
+        .img-float-left { float: left; max-width: 160px; margin-right: 1.8rem; margin-bottom: 0.8rem; }
+        .data-slate::after { content: ""; display: table; clear: both; } /* Clearfix for floats */
+
+        /* --- Tactical Overview (Sidebar) --- */
+        #tactical-overview { position: sticky; top: 110px; /* Adjust based on header height */ align-self: start; padding: 1.5rem; margin-top: 2rem; border-radius: 6px; }
+        #tactical-overview .overview-title { font-weight: 900; font-size: 1.2rem; margin-bottom: 1.8rem; text-transform: uppercase; color: var(--color-tertiary); letter-spacing: 0.11em; border-bottom: 1px solid var(--color-tertiary); padding-bottom: 0.6rem; display: flex; align-items: center; gap: 0.5em; }
+        #tactical-overview a { display: flex; align-items: center; gap: 0.5em; padding: 0.7rem 0; font-size: 0.8rem; color: var(--color-text-muted); border-left: 3px solid rgba(var(--color-text-muted-rgb), 0.5); padding-left: 1.3rem; margin-bottom: 0.7rem; transition: all 0.25s ease; text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600; }
+        #tactical-overview a:hover { color: var(--color-accent); border-left-color: var(--color-accent); background-color: rgba(var(--color-accent-rgb), 0.15); padding-left: 1.8rem; text-shadow: 0 0 6px var(--color-accent); transform: translateX(5px); }
+        #tactical-overview .sub-link { padding-left: 1.6rem; font-size: 0.75rem; opacity: 0.85; border-left-width: 2px; margin-bottom: 0.5rem;}
+        #tactical-overview .sub-link:hover { padding-left: 2.1rem; }
+         #tactical-overview .sub-link.ml-4 { margin-left: 1rem; padding-left: 0.8rem;} /* Style for nested links */
+         #tactical-overview .sub-link.ml-4:hover { padding-left: 1.3rem; }
+         #tactical-overview .sub-link.ml-4 .icon { vertical-align: -0.05em; } /* Adjust icon alignment for smaller */
+        #tactical-overview .nav-section-title { font-weight: 700 !important; color: var(--color-text) !important; margin-top: 1.2rem; font-size: 0.85rem !important; border-left-color: var(--color-primary) !important; padding-left: 1.1rem !important; }
+         #tactical-overview .nav-section-title:hover { color: var(--color-primary) !important; border-left-color: var(--color-primary) !important; background-color: rgba(var(--color-primary-rgb), 0.15) !important; padding-left: 1.6rem !important; text-shadow: 0 0 6px var(--color-primary); transform: translateX(5px); }
+
+        /* --- Form --- */
+        #interface-request-form label { display: block; margin-bottom: 0.6rem; text-transform: uppercase; font-size: 0.8rem; color: var(--color-text-muted); letter-spacing: 0.06em; text-align: left; font-weight: 600; }
+        #interface-request-form input[type="text"], #interface-request-form input[type="email"], #interface-request-form select, #interface-request-form textarea { width: 100%; padding: 1rem 1.2rem; border-radius: 5px; background: rgba(0, 8, 20, 0.95); color: var(--color-text); border: 1px solid var(--color-text-muted); transition: all 0.3s ease; outline: none; font-size: 1rem; font-family: var(--font-body); }
+        #interface-request-form input::placeholder, #interface-request-form textarea::placeholder { color: rgba(var(--color-text-muted-rgb), 0.5); font-style: italic; opacity: 0.8; }
+        #interface-request-form input:focus, #interface-request-form select:focus, #interface-request-form textarea:focus { border-color: var(--color-accent); box-shadow: 0 0 18px rgba(var(--color-accent-rgb), 0.7); background: rgba(0, 0, 8, 0.98); }
+        #interface-request-form button { margin-top: 1.8rem; width: 100%; }
+        #form-message-interface { margin-top: 1.2rem; padding: 1.1rem; border-radius: 5px; font-size: 0.95rem; text-align: center; font-weight: 600; display: none; /* Changed to none */ border: 1px solid transparent; align-items: center; justify-content: center; gap: 0.6em; } /* JS will set display: flex */
+        .form-message-loading { background-color: rgba(var(--color-accent-rgb), 0.15); color: var(--color-accent); border-color: var(--color-accent); animation: pulse-bg 1s infinite alternate; display: flex !important; } /* Use important to override display: none */
+        .form-message-success { background-color: rgba(34, 197, 94, 0.15); color: #22c55e; border-color: #22c55e; display: flex !important; }
+        .form-message-error { background-color: rgba(239, 68, 68, 0.15); color: #ef4444; border-color: #ef4444; display: flex !important; }
+        @keyframes pulse-bg { 0% { background-color: rgba(var(--color-accent-rgb), 0.1); } 100% { background-color: rgba(var(--color-accent-rgb), 0.25); } }
+
+        /* --- Footer --- */
+        #signal-cutoff { background: #000; border-top: 5px solid var(--color-accent); padding: 3.5rem 0; margin-top: 5rem; }
+        #signal-cutoff .contact-link { color: var(--color-text-muted); transition: all 0.25s ease; text-transform: uppercase; letter-spacing: 0.11em; font-size: 0.8rem; font-weight: 600; display: inline-flex; align-items: center; gap: 0.4em; margin: 0 0.5rem; }
+        #signal-cutoff .contact-link:hover { color: var(--color-accent); text-shadow: 0 0 10px var(--color-accent); transform: translateY(-2px); }
+        #signal-cutoff .insta-link { color: var(--color-secondary); }
+        #signal-cutoff .insta-link:hover { color: var(--color-accent); text-shadow: 0 0 10px var(--color-accent); }
+
+        /* --- Utilities --- */
+        .scroll-margin-top { scroll-margin-top: 120px; /* Adjust for sticky header */ }
+        .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border-width: 0; }
+        .icon { display: inline-block; width: 1em; height: 1em; vertical-align: -0.125em; fill: currentColor; }
+        .icon-pulse { animation: pulse-icon 1.8s infinite ease-in-out; }
+        @keyframes pulse-icon { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.15); } }
+
+        /* --- Interactive Process Timeline --- */
+        .process-timeline { position: relative; padding: 1.5rem 0; margin-left: 1rem; /* Offset for line */ }
+        .process-timeline::before { /* The vertical line - Animated */
+            content: ''; position: absolute; top: 0; bottom: 0; left: 1.1rem; /* Centered on circle */ width: 4px;
+            background: linear-gradient(to bottom, var(--color-primary), var(--color-tertiary));
+            border-radius: 2px;
+            transform-origin: top; transform: scaleY(0); /* Start hidden */
+            transition: transform 1.5s ease-out; /* Animate growth */
+            opacity: 0.5;
+            z-index: 1; /* Ensure behind circle */
+        }
+        .process-timeline.visible::before { transform: scaleY(1); } /* Triggered by JS */
+        .process-step {
+            counter-increment: step-counter; position: relative; padding-left: 4rem;
+            margin-bottom: 3rem; opacity: 0; /* Start hidden for GSAP */
+            /* Animation handled by GSAP */
+        }
+        .process-step::before { /* The number circle - Enhanced */
+            content: counter(step-counter); position: absolute; left: 0; top: 0;
+            width: 2.5rem; height: 2.5rem;
+            background-color: var(--color-primary); color: var(--color-background);
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            font-family: var(--font-heading); font-weight: bold; font-size: 1.1rem;
+            box-shadow: 0 0 15px var(--color-primary), inset 0 0 5px rgba(0,0,0,0.5);
+            border: 3px solid var(--color-background);
+            transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.4s ease, background-color 0.4s ease; /* Added background transition */
+            z-index: 2;
+        }
+        .process-step.is-active::before { /* Highlight active step */
+             transform: scale(1.15);
+             box-shadow: 0 0 25px var(--color-primary), 0 0 15px var(--color-accent), inset 0 0 8px rgba(0,0,0,0.4);
+             background-color: var(--color-accent);
+        }
+        .process-step h5 { margin-top: 0.2rem; margin-bottom: 0.6rem; color: var(--color-primary); font-size: 1.15rem; }
+
+        .partner-opp { margin-bottom: 1.2rem; }
+        .partner-opp strong { color: var(--color-secondary); }
+
+        /* --- Particle Canvas for Button Clicks --- */
+        #particle-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 9999; }
+
+        /* --- GSAP Scroll Animation Placeholders --- */
+        /* GSAP will add transforms directly, but we need initial opacity */
+        .gsap-fade-in { opacity: 0; }
+        .gsap-slide-in-left { opacity: 0; transform: translateX(-60px); }
+        .gsap-slide-in-right { opacity: 0; transform: translateX(60px); }
+        .gsap-scale-up { opacity: 0; transform: scale(0.8); }
+        .gsap-rotate-in { opacity: 0; transform: rotate(-15deg) scale(0.9); }
+
+        /* --- Mobile Responsiveness --- */
+        @media (max-width: 1024px) {
+            #tactical-overview { display: none; }
+            .content-column { width: 100%; }
+            .container-command { padding: 0 1rem; }
+        }
+        @media (max-width: 768px) {
+            body { font-size: 15px; }
+            .bridge-logo h1 { font-size: 1.4rem; }
+            .nav-link { font-size: 0.65rem; padding: 0.5rem 0.5rem; gap: 0.2em; }
+            #main-bridge .container-command { flex-direction: column; align-items: center; }
+            #main-bridge nav { margin-top: 0.8rem; }
+            .section-heading { font-size: clamp(2rem, 9vw, 2.5rem); }
+            .section-subheading { font-size: clamp(1.2rem, 6vw, 1.5rem); margin-bottom: 2.5rem; }
+            .btn-directive { padding: 0.9rem 2rem; font-size: 0.95rem; }
+            .btn-secondary-ops { padding: 0.7rem 1.6rem; font-size: 0.85rem; }
+            .img-float-right, .img-float-left { float: none; max-width: 60%; margin: 1.5rem auto; display: block; }
+            .data-slate { padding: 1.5rem; backdrop-filter: blur(6px) saturate(110%); }
+            .hero-section { padding: 10rem 0 8rem 0; }
+            .hero-section h2 { font-size: clamp(2.5rem, 12vw, 3.5rem); }
+            .hero-section p { font-size: clamp(1rem, 4.5vw, 1.1rem); }
+            .process-timeline { margin-left: 0.5rem; }
+            .process-step { padding-left: 3.5rem; }
+            #interface-request-form input, #interface-request-form textarea, #interface-request-form select { padding: 0.9rem 1rem; font-size: 0.95rem;}
+        }
+        /* Reduce motion preference */
+        @media (prefers-reduced-motion: reduce) {
+            html { scroll-behavior: auto; }
+            body, #supernova-container, .data-slate, .btn, .nav-link::before, .nav-link a, #tactical-overview a, .process-step::before, .gsap-fade-in, .gsap-slide-in-left, .gsap-slide-in-right, .gsap-scale-up, .gsap-rotate-in {
+                animation: none !important;
+                transition: none !important;
+            }
+            .gsap-fade-in, .gsap-slide-in-left, .gsap-slide-in-right, .gsap-scale-up, .gsap-rotate-in {
+                opacity: 1 !important;
+                transform: none !important;
+            }
+            #supernova-container { display: none !important; opacity: 0 !important; } /* Hide intro completely */
+            body { opacity: 1 !important; } /* Show body immediately */
+            #galaxy-bg { opacity: 0.5 !important; /* Dim background if it moves */ }
+            .content-wrapper::before { animation: none !important; }
+            .char { opacity: 1 !important; animation: none !important; transform: none !important;}
+            .hud-element { opacity: 1 !important; transform: none !important; }
+            .process-timeline.visible::before { transform: scaleY(1) !important; } /* Ensure timeline line visible */
+            .process-step::before { transform: none !important; } /* Ensure step circle visible */
+            .process-step.is-active::before { transform: scale(1.15) !important; } /* Keep active scaling */
+        }
+
+    </style>
+</head>
+<body class="antialiased"> {/* Starts hidden via CSS, class 'loaded' added by JS */}
+
+{/* --- Supernova Intro --- */}
+<div id="supernova-container">
+    <canvas id="supernova-canvas"></canvas>
+</div>
+
+{/* --- Persistent Backgrounds --- */}
+<canvas id="galaxy-bg"></canvas>
+<canvas id="particle-canvas"></canvas> {/* For button clicks */}
+
+{/* --- HUD Overlay --- */}
+<div class="hud-element hud-top-left">
+    <div class="hud-bracket hud-bracket-tl"></div>
+    STATUS: <span class="text-primary">ONLINE</span> <br> SECTOR: NASHVILLE GRID
+</div>
+<div class="hud-element hud-top-right">
+    <div class="hud-bracket hud-bracket-tr"></div>
+    SIGNAL: <span class="text-primary">STRONG</span> <br> CORE: <span class="text-accent">V6.1</span> // ACTIVE {/* Bump version */}
+</div>
+<div class="hud-element hud-bottom-left">
+    <div class="hud-bracket hud-bracket-bl"></div>
+    [PIXEL PLAYGROUNDS // INITIATIVE_01]
+</div>
+<div class="hud-element hud-bottom-right">
+     <div class="hud-bracket hud-bracket-br"></div>
+    &copy; <span id="current-year-hud"></span> // SECURE DATALINK ESTABLISHED
+</div>
+
+{/* --- Main Content --- */}
+<div class="content-wrapper">
+
+    <header id="main-bridge">
+        <div class="container-command flex flex-col md:flex-row justify-between items-center">
+            <div class="bridge-logo text-center md:text-left mb-2 md:mb-0">
+                <h1 class="font-black leading-tight glow-primary">Pixel Playgrounds</h1>
+                <p class="text-xs uppercase tracking-widest">// Nashville Creator Tech Command //</p>
+            </div>
+            <nav class="flex flex-wrap justify-center items-center space-x-1 md:space-x-2">
+                 <a href="#sector-intel" class="nav-link"><svg class="icon" viewBox="0 0 24 24"><path d="M9.4 16.6 4.8 12l4.6-4.6L8 6l-6 6 6 6 1.4-1.4zm5.2 0 4.6-4.6-4.6-4.6L16 6l6 6-6 6-1.4-1.4z"/></svg>Ops Manual</a> {/* Shortened Text */}
+                 <a href="#the-forge" class="nav-link"><svg class="icon" viewBox="0 0 24 24"><path d="M13.85 22.25h-3.7c-.74 0-1.36-.54-1.45-1.27l-.27-1.89c-.27-.14-.53-.29-.79-.46l-1.8.72c-.7.26-1.47-.09-1.81-.73L2.2 15.13c-.34-.66-.2-1.44.31-1.84l1.53-1.19c-.01-.15-.02-.3-.02-.46 0-.15.01-.31.02-.46L2.51 9.98C2 9.58 1.86 8.81 2.2 8.15l1.81-3.13c.34-.64 1.11-.99 1.81-.73l1.8.72c.26-.17.52-.32.79-.46l.27-1.91c.09-.7.71-1.25 1.45-1.25h3.7c.74 0 1.36.54 1.45 1.27l.27 1.89c.27.14.53.29.79-.46l1.8-.72c.7-.26 1.47.09 1.81.73l1.81 3.13c.34-.66-.2-1.44-.31-1.84l-1.53 1.19c.01.15.02.3.02.46s-.01.31-.02.46l1.53 1.19c.51.4.65 1.18.31 1.84l-1.81 3.13c-.34-.64-1.11-.99-1.81-.73l-1.8-.72c-.26-.17-.52-.32-.79-.46l-.27 1.91c-.1.68-.71 1.22-1.45 1.22zm-2.6-8.5c1.93 0 3.5-1.57 3.5-3.5s-1.57-3.5-3.5-3.5-3.5 1.57-3.5 3.5 1.57 3.5 3.5 3.5z"/></svg>Installations</a>
+                 <a href="#our-process" class="nav-link"><svg class="icon" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/></svg>Process</a>
+                 <a href="#comms-channel" class="nav-link"><svg class="icon" viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/></svg>Contact</a>
+                 <a href="https://www.instagram.com/pixelplaygroundsnashville/" target="_blank" rel="noopener noreferrer" class="nav-link insta-link" aria-label="Instagram"><svg class="icon" viewBox="0 0 24 24"><path d="M7.8 2h8.4C19.4 2 22 4.6 22 7.8v8.4a5.8 5.8 0 0 1-5.8 5.8H7.8C4.6 22 2 19.4 2 16.2V7.8A5.8 5.8 0 0 1 7.8 2m-.2 2A3.6 3.6 0 0 0 4 7.6v8.8C4 18.39 5.61 20 7.6 20h8.8a3.6 3.6 0 0 0 3.6-3.6V7.6C20 5.61 18.39 4 16.4 4H7.6m9.65 1.5a1.25 1.25 0 0 1 1.25 1.25A1.25 1.25 0 0 1 17.25 8 1.25 1.25 0 0 1 16 6.75a1.25 1.25 0 0 1 1.25-1.25M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3z"/></svg>IG Relay</a>
+                 <a href="tel:+16156064969" class="nav-link holo-call-link" aria-label="Call"><svg class="icon" viewBox="0 0 24 24"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/></svg>Holo-Call</a>
+            </nav>
+        </div>
+    </header>
+
+    <section class="hero-section py-32 md:py-48 text-center relative overflow-hidden flex items-center justify-center">
+        <div class="container-command relative z-10 px-4 md:px-6">
+            <h2 id="hero-headline" class="text-4xl md:text-5xl lg:text-7xl font-black mb-6 uppercase glow-tertiary tracking-wider" data-text="Forge Your Sound Empire">
+                 Forge Your Sound Empire {/* JS will split this */}
+            </h2>
+            <p class="mt-4 max-w-3xl mx-auto text-lg md:text-xl text-gray-300 mb-12 leading-relaxed gsap-fade-in">
+                Pixel Playgrounds Nashville delivers <strong class="text-secondary glow-secondary">elite podcast studio installations & strategic tech consultation</strong> for creators demanding professional-grade audio. <em class="text-primary">Turnkey solutions, maximum impact.</em>
+            </p>
+            <div class="space-y-6 gsap-fade-in">
+                <a href="#comms-channel" class="btn btn-directive inline-block text-lg warning-border">
+                     <svg class="icon icon-pulse" viewBox="0 0 24 24"><path d="M8.59 16.59 13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/></svg>
+                     Initiate Consultation Protocol
+                     <svg class="icon icon-pulse" viewBox="0 0 24 24"><path d="m5.98 17.71 1.41 1.42L12 14.41l4.6 4.72 1.42-1.41L13.41 13l4.61-4.71L16.6 6.88 12 11.59 7.39 6.88 5.98 8.29 10.59 13l-4.61 4.71z"/></svg> {/* Different icon */}
+                 </a>
+                <p class="text-sm text-accent">// Priority Comms Channels: ONLINE //</p>
+                <div class="flex flex-wrap justify-center items-center gap-x-6 gap-y-4">
+                    <a href="tel:+16156064969" class="font-bold text-lg text-accent hover:text-secondary glow-accent hover:underline flex items-center gap-1.5" aria-label="Call"><svg class="icon" viewBox="0 0 24 24"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/></svg>(615) 606-4969</a>
+                     <span class="text-gray-700 hidden md:inline"> || </span>
+                     <a href="https://www.instagram.com/pixelplaygroundsnashville/" target="_blank" rel="noopener noreferrer" class="font-bold text-lg text-accent hover:text-secondary insta-link glow-accent hover:underline flex items-center gap-1.5" aria-label="Instagram"><svg class="icon" viewBox="0 0 24 24"><path d="M7.8 2h8.4C19.4 2 22 4.6 22 7.8v8.4a5.8 5.8 0 0 1-5.8 5.8H7.8C4.6 22 2 19.4 2 16.2V7.8A5.8 5.8 0 0 1 7.8 2m-.2 2A3.6 3.6 0 0 0 4 7.6v8.8C4 18.39 5.61 20 7.6 20h8.8a3.6 3.6 0 0 0 3.6-3.6V7.6C20 5.61 18.39 4 16.4 4H7.6m9.65 1.5a1.25 1.25 0 0 1 1.25 1.25A1.25 1.25 0 0 1 17.25 8 1.25 1.25 0 0 1 16 6.75a1.25 1.25 0 0 1 1.25-1.25M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3z"/></svg>IG: @pixelplaygroundsnashville</a>
+                 </div>
+            </div>
+        </div>
+    </section>
+
+    <main class="container-command py-16 md:py-20">
+        <div class="flex flex-col lg:flex-row gap-10 md:gap-16">
+            <aside class="w-full lg:w-1/4 xl:w-1/5 gsap-slide-in-left">
+                 <div id="tactical-overview" class="data-slate !sticky top-[110px]">
+                    <h4 class="overview-title glow-tertiary"><svg class="icon" viewBox="0 0 24 24"><path d="M4 6h16v2H4zm0 5h16v2H4zm0 5h16v2H4z"/></svg>// Site Manifest V6.1 //</h4>
+
+                    {/* --- Updated Podcast Intel Links --- */}
+                    <a href="#sector-intel" class="nav-section-title"><svg class="icon" viewBox="0 0 24 24"><path d="M9.4 16.6 4.8 12l4.6-4.6L8 6l-6 6 6 6 1.4-1.4zm5.2 0 4.6-4.6-4.6-4.6L16 6l6 6-6 6-1.4-1.4z"/></svg>Sector Intel: 2025 Manual</a>
+                    <a href="#budget-loadouts" class="sub-link"><svg class="icon" viewBox="0 0 24 24"><path d="M8.59 16.59 13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/></svg>// Unit 1: Budget Ops</a>
+                    <a href="#budget-mics" class="sub-link ml-4 opacity-75 !text-sm"><svg class="icon" viewBox="0 0 16 16" style="width:0.8em; height:0.8em;"><path d="m12.14 8.753-5.482 4.796c-.646.566-1.658.106-1.658-.753V3.204a1 1 0 0 1 1.659-.753l5.48 4.796a1 1 0 0 1 0 1.506z"/></svg>Mics</a>
+                    <a href="#budget-video" class="sub-link ml-4 opacity-75 !text-sm"><svg class="icon" viewBox="0 0 16 16" style="width:0.8em; height:0.8em;"><path d="m12.14 8.753-5.482 4.796c-.646.566-1.658.106-1.658-.753V3.204a1 1 0 0 1 1.659-.753l5.48 4.796a1 1 0 0 1 0 1.506z"/></svg>Video</a>
+                    <a href="#budget-lighting" class="sub-link ml-4 opacity-75 !text-sm"><svg class="icon" viewBox="0 0 16 16" style="width:0.8em; height:0.8em;"><path d="m12.14 8.753-5.482 4.796c-.646.566-1.658.106-1.658-.753V3.204a1 1 0 0 1 1.659-.753l5.48 4.796a1 1 0 0 1 0 1.506z"/></svg>Lighting</a>
+                    <a href="#budget-capture" class="sub-link ml-4 opacity-75 !text-sm"><svg class="icon" viewBox="0 0 16 16" style="width:0.8em; height:0.8em;"><path d="m12.14 8.753-5.482 4.796c-.646.566-1.658.106-1.658-.753V3.204a1 1 0 0 1 1.659-.753l5.48 4.796a1 1 0 0 1 0 1.506z"/></svg>Capture</a>
+                    <a href="#budget-software" class="sub-link ml-4 opacity-75 !text-sm"><svg class="icon" viewBox="0 0 16 16" style="width:0.8em; height:0.8em;"><path d="m12.14 8.753-5.482 4.796c-.646.566-1.658.106-1.658-.753V3.204a1 1 0 0 1 1.659-.753l5.48 4.796a1 1 0 0 1 0 1.506z"/></svg>Software</a>
+                     <a href="#budget-gaming-rigs" class="sub-link ml-4 opacity-75 !text-sm"><svg class="icon" viewBox="0 0 16 16" style="width:0.8em; height:0.8em;"><path d="m12.14 8.753-5.482 4.796c-.646.566-1.658.106-1.658-.753V3.204a1 1 0 0 1 1.659-.753l5.48 4.796a1 1 0 0 1 0 1.506z"/></svg>Gaming Rigs</a>
+                    <a href="#mobile-ops" class="sub-link"><svg class="icon" viewBox="0 0 24 24"><path d="M8.59 16.59 13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/></svg>// Unit 2: Mobile Ops</a>
+                     <a href="#mobile-hardware" class="sub-link ml-4 opacity-75 !text-sm"><svg class="icon" viewBox="0 0 16 16" style="width:0.8em; height:0.8em;"><path d="m12.14 8.753-5.482 4.796c-.646.566-1.658.106-1.658-.753V3.204a1 1 0 0 1 1.659-.753l5.48 4.796a1 1 0 0 1 0 1.506z"/></svg>Hardware</a>
+                     <a href="#mobile-software" class="sub-link ml-4 opacity-75 !text-sm"><svg class="icon" viewBox="0 0 16 16" style="width:0.8em; height:0.8em;"><path d="m12.14 8.753-5.482 4.796c-.646.566-1.658.106-1.658-.753V3.204a1 1 0 0 1 1.659-.753l5.48 4.796a1 1 0 0 1 0 1.506z"/></svg>Software</a>
+                     <a href="#mobile-examples" class="sub-link ml-4 opacity-75 !text-sm"><svg class="icon" viewBox="0 0 16 16" style="width:0.8em; height:0.8em;"><path d="m12.14 8.753-5.482 4.796c-.646.566-1.658.106-1.658-.753V3.204a1 1 0 0 1 1.659-.753l5.48 4.796a1 1 0 0 1 0 1.506z"/></svg>Scenarios</a>
+                     <a href="#mobile-tutorials" class="sub-link ml-4 opacity-75 !text-sm"><svg class="icon" viewBox="0 0 16 16" style="width:0.8em; height:0.8em;"><path d="m12.14 8.753-5.482 4.796c-.646.566-1.658.106-1.658-.753V3.204a1 1 0 0 1 1.659-.753l5.48 4.796a1 1 0 0 1 0 1.506z"/></svg>Tutorials</a>
+                    <a href="#platform-protocols" class="sub-link"><svg class="icon" viewBox="0 0 24 24"><path d="M8.59 16.59 13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/></svg>// Unit 3: Cross-Platform</a>
+                    <a href="#ai-augmentation" class="sub-link"><svg class="icon" viewBox="0 0 24 24"><path d="M8.59 16.59 13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/></svg>// Unit 4: AI Augmentation</a>
+
+                    {/* --- Keep Other Main Section Links --- */}
+                    <a href="#the-forge" class="nav-section-title"><svg class="icon" viewBox="0 0 24 24"><path d="M13.85 22.25h-3.7c-.74 0-1.36-.54-1.45-1.27l-.27-1.89c-.27-.14-.53-.29-.79-.46l-1.8.72c-.7.26-1.47-.09-1.81-.73L2.2 15.13c-.34-.66-.2-1.44.31-1.84l1.53-1.19c-.01-.15-.02-.3-.02-.46 0-.15.01-.31.02-.46L2.51 9.98C2 9.58 1.86 8.81 2.2 8.15l1.81-3.13c.34-.64 1.11-.99 1.81-.73l1.8.72c.26-.17.52-.32.79-.46l.27-1.91c.09-.7.71-1.25 1.45-1.25h3.7c.74 0 1.36.54 1.45 1.27l.27 1.89c.27.14.53.29.79-.46l1.8-.72c.7-.26 1.47.09 1.81.73l1.81 3.13c.34.66-.2 1.44-.31 1.84l-1.53 1.19c.01.15.02.3.02.46s-.01.31-.02.46l1.53 1.19c.51.4.65 1.18.31 1.84l-1.81 3.13c-.34-.64-1.11-.99-1.81-.73l-1.8-.72c-.26-.17-.52-.32-.79-.46l-.27 1.91c-.1.68-.71 1.22-1.45 1.22zm-2.6-8.5c1.93 0 3.5-1.57 3.5-3.5s-1.57-3.5-3.5-3.5-3.5 1.57-3.5 3.5 1.57 3.5 3.5 3.5z"/></svg>Installations</a>
+                    <a href="#forge-intro" class="sub-link"><svg class="icon" viewBox="0 0 24 24"><path d="M8.59 16.59 13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/></svg>Overview</a>
+                    <a href="#installation-tiers" class="sub-link"><svg class="icon" viewBox="0 0 24 24"><path d="M8.59 16.59 13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/></svg>Service Tiers</a>
+                    <a href="#acoustic-upsell" class="sub-link"><svg class="icon" viewBox="0 0 24 24"><path d="M8.59 16.59 13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/></svg>Acoustic Treatments</a>
+
+                     <a href="#our-process" class="nav-section-title"><svg class="icon" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/></svg>Our Process</a>
+                     <a href="#process-steps" class="sub-link"><svg class="icon" viewBox="0 0 24 24"><path d="M8.59 16.59 13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/></svg>How It Works</a>
+                     <a href="#pricing-philosophy" class="sub-link"><svg class="icon" viewBox="0 0 24 24"><path d="M8.59 16.59 13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/></svg>Pricing Philosophy</a>
+
+                     <a href="#partner-opps" class="nav-section-title"><svg class="icon" viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>Partner With Us</a>
+                     
+                     <a href="#comms-channel" class="nav-section-title"><svg class="icon" viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/></svg>Contact</a>
+                     <a href="#secure-comms" class="sub-link"><svg class="icon" viewBox="0 0 24 24"><path d="M8.59 16.59 13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/></svg>Request Consultation</a>
+                 </div>
+             </aside>
+
+             <div class="w-full lg:w-3/4 xl:w-4/5 content-column">
+                
+                {/* --- START: 2025 Guide Content (Already Integrated) --- */}
+                 <section id="sector-intel" class="scroll-margin-top gsap-fade-in">
+                    {/* --- Renamed Section Heading --- */}
+                    <h2 class="section-heading glow-tertiary glitch-heading" data-text="Sector Intel: 2025 Ops Manual">Sector Intel: <span class="text-primary glow-primary">2025 Ops Manual</span></h2>
+                    <h3 class="section-subheading text-gray-400 -mt-4">// Gear, Workflow & AI Analysis for Modern Creators //</h3>
+
+                    {/* --- Introduction Slate --- */}
+                    <div class="data-slate p-5 md:p-6 rounded border border-primary/30 mb-10 gsap-scale-up">
+                        <h4>
+                            <svg class="icon" viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
+                            // Mission Brief: 2025 Creator Landscape //
+                        </h4>
+                        <p>This comprehensive intel report covers four key operational theaters for podcasters, streamers, and gamers aiming to optimize deployments in 2025. We dissect:</p>
+                        <ul>
+                            <li><strong>Budget Loadouts:</strong> Achieving professional results without breaking the bank.</li>
+                            <li><strong>Mobile Operations:</strong> Portable gear for content creation beyond the command center.</li>
+                            <li><strong>Cross-Platform Protocols:</strong> Navigating the Mac vs. PC divide.</li>
+                            <li><strong>AI Augmentation:</strong> Leveraging artificial intelligence to enhance workflows.</li>
+                        </ul>
+                        <p>Each subsection delivers current gear recommendations, software tactics, and links to essential training modules and troubleshooting protocols (<code>beginner -> advanced</code> levels).</p>
+                    </div>
+
+                    {/* --- 1. Budget Builds Section --- */}
+                    <section id="budget-loadouts" class="scroll-margin-top pt-6 gsap-slide-in-right">
+                        <h3 class="text-2xl md:text-3xl font-bold mb-6 glow-secondary">// Unit 1: Economy Spec Ops - Best-Value Gear (2025) //</h3>
+                        <div class="data-slate mb-10 gsap-scale-up">
+                             <h4>
+                                 <svg class="icon" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm1-15h-2v6h2V5zm0 8h-2v2h-2v-2H8v2H6v-2H4v2h2v2h2v-2h2v2h2v-2h2v2h2v-2h2v-2h-2z"/></svg> {/* Example icon */}
+                                 Resource Allocation: High Impact, Low Cost
+                             </h4>
+                            <p>Establishing a high-fidelity broadcast nexus doesn't necessitate orbital-level expenditure. 2025 offers potent hardware and software systems delivering professional specs on limited resource allocation. This unit analyzes cost-effective components for streaming, podcasting, and gaming setups (<code>Windows // macOS</code> compatible).</p>
+                        </div>
+
+                        {/* -- 1.1 Microphones -- */}
+                        <div id="budget-mics" class="data-slate mb-8 gsap-rotate-in scroll-margin-top">
+                             <h5>
+                                 <svg class="icon" viewBox="0 0 24 24"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.91-3c-.49 0-.9.36-.98.85-.37 3.11-2.89 5.54-5.93 5.54s-5.56-2.43-5.93-5.54c-.08-.49-.49-.85-.98-.85-.55 0-1 .45-1 1 0 .73.15 1.43.43 2.07.37.87 1.02 1.6 1.85 2.14V21h4v-1.78c.83-.54 1.48-1.27 1.85-2.14.28-.64.43-1.34.43-2.07 0-.55-.45-1-1-1z"/></svg>
+                                 Audio Capture: Prioritize Voice Clarity
+                             </h5>
+                             <p>Crystal clear audio is non-negotiable; substandard signals lose the audience faster than visual artifacts (<code>uscreen.tv</code>). Excellent sub-$100 microphones exist:</p>
+                             <img src="https://placehold.co/300x150/010307/0affa0?text=Blue+Yeti+Nano&font=orbitron" alt="Blue Yeti Nano USB Microphone" class="slate-graphic img-float-right gsap-scale-up" loading="lazy">
+                             <ul>
+                                 <li><strong>USB Simplicity (Beginner):</strong> Plug-and-play ease.
+                                     <ul>
+                                         <li><strong>Blue Yeti Nano (~$99):</strong> Broadcast-quality, cardioid pattern minimizes room noise (<code>uscreen.tv</code>). Often discounted (<code>uscreen.tv</code>).</li>
+                                         <li><strong>FIFINE K669B (~$30):</strong> USB condenser, surprising value (<code>captions.ai</code>).</li>
+                                         <li><strong>Blue Snowball iCE (~$50):</strong> Popular budget USB (<code>captions.ai</code>).</li>
+                                         <li><strong>RØDE NT-USB Mini (~$100):</strong> Compact, warm tone (<code>captions.ai</code>).</li>
+                                         <li><strong>512 Audio Tempest (~$100):</strong> Highly-rated budget USB condenser (<code>eurogamer.net</code>).</li>
+                                     </ul>
+                                 </li>
+                                 <li><strong>XLR Upgrade Path:</strong> Requires audio interface, offers expansion potential.
+                                     <ul>
+                                         <li><strong>Audio-Technica AT2020 XLR (~$99):</strong> Best "cheap" XLR streamer mic (<code>eurogamer.net</code>). Needs interface (e.g., Focusrite Scarlett).</li>
+                                         <li><strong class="text-accent">Shure MV7i (2025 Release):</strong> "Smart" USB/XLR hybrid. Crucially, accepts a <em>second</em> XLR input, acting as a 2-channel interface for budget duo podcasts (<code>gearspace.com</code>). Mac/PC/iOS compatible (<code>gearspace.com</code>, <code>musictech.com</code>).</li>
+                                     </ul>
+                                 </li>
+                             </ul>
+                            <p class="mt-4"><strong>Mic Setup Directives:</strong> Position correctly (side-address like Yeti? check logo placement <code>eurogamer.net</code>). Use a boom arm to isolate from desk noise (<code>eurogamer.net</code>). Check software input settings if audio is weak. Use a pop filter for plosives (<code>eurogamer.net</code>).</p>
+
+                             <h6 class="text-tertiary font-semibold mt-5 mb-2">// Audio Tactical Datafeeds & Fixes //</h6>
+                             <ul>
+                                <li><a href="#" target="_blank" rel="noopener">USB Mic Setup Guide (Logitech/Blue):</a> Optimal settings, troubleshooting (<code>uscreen.tv</code>).</li>
+                                <li><a href="#" target="_blank" rel="noopener">StreamYard Audio Tips:</a> Gain staging, monitoring levels (<code>streamyard.com</code>).</li>
+                                <li><a href="#" target="_blank" rel="noopener">OmniStream Lip-Sync Fixes:</a> A/V sync delay in OBS, capture settings (<code>omnistream.live</code>).</li>
+                            </ul>
+                        </div>
+
+                        {/* -- 1.2 Cameras -- */}
+                        <div id="budget-video" class="data-slate mb-8 gsap-slide-in-left scroll-margin-top">
+                            <h5>
+                                <svg class="icon" viewBox="0 0 24 24"><path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4zM15 16H5V8h10v8zm-6-1.5c1.38 0 2.5-1.12 2.5-2.5S10.38 9.5 9 9.5 6.5 10.62 6.5 12 7.62 14.5 9 14.5z"/></svg>
+                                Visual Acquisition: Cameras & Video Feeds
+                            </h5>
+                            <p>A sharp visual feed enhances engagement. Start effectively without breaking the bank (1080p is key):</p>
+                             <ul>
+                                 <li><strong>Smartphones (Existing Asset):</strong> Modern phone cams (iPhone 12+, recent Androids) deliver 1080p. Use apps like DroidCam/EpocCam for wireless/USB webcam functionality (<code>captions.ai</code>). IRL streamers often use phones on gimbals (see Mobile Ops unit).</li>
+                                 <li><strong>Budget Webcams (Plug & Play):</strong>
+                                     <ul>
+                                         <li><strong>Logitech C920 (~$70):</strong> Reliable 1080p standard, Mac/Win compatible (<code>captions.ai</code>).</li>
+                                         <li><strong>Elgato Facecam MK.2:</strong> Higher quality uncompressed 1080p60, control software (<code>captions.ai</code>).</li>
+                                         <li><strong class="text-accent">Razer Kiyo X ("Best Value"):</strong> Sharp 1080p, built-in ring light (<code>eurogamer.net</code>).</li>
+                                         <li><strong>Obsbot Meet 2:</strong> Optimized for laptops, AI auto-framing (<code>eurogamer.net</code>).</li>
+                                     </ul>
+                                </li>
+                                <li><strong>"Real" Cameras (DSLR/Mirrorless Repurposing):</strong> Achieve pro look (shallow depth of field) using owned cameras (e.g., Sony A6000, Canon M50) via HDMI capture card (e.g., Elgato Cam Link) (<code>uscreen.tv</code>). Requires clean HDMI output and tripod/mount (<code>uscreen.tv</code>). Some offer USB webcam utility software.</li>
+                                <li><strong>Directive: Lighting is Paramount!</strong> Good lighting makes cheap cameras look good; bad lighting makes expensive cameras look bad (<code>zdnet.com</code>). Covered next.</li>
+                            </ul>
+                             <h6 class="text-tertiary font-semibold mt-5 mb-2">// Video Tactical Datafeeds & Fixes //</h6>
+                             <ul>
+                                <li><a href="#" target="_blank" rel="noopener">Webcam Optimization (OBSBOT Guide 2025):</a> Settings in OBS, lighting setup (<code>obsbot.com</code>).</li>
+                                <li><a href="#" target="_blank" rel="noopener">DSLR as Webcam (Elgato Guide):</a> Connecting via Cam Link, clean HDMI config (<code>uscreen.tv</code>).</li>
+                                <li><a href="#" target="_blank" rel="noopener">General Video Tips (Uscreen Pillars):</a> Use best available camera, stable support, 1080p minimum (<code>uscreen.tv</code>).</li>
+                            </ul>
+                        </div>
+
+                         {/* -- 1.3 Lighting -- */}
+                        <div id="budget-lighting" class="data-slate mb-8 gsap-scale-up scroll-margin-top">
+                            <h5>
+                                <svg class="icon" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zM11 7h2v5h-2V7zm0 7h2v2h-2v-2z"/></svg> {/* Using generic alert icon */}
+                                Illumination Control: Budget Lighting Solutions
+                            </h5>
+                            <p>Proper illumination elevates video fidelity dramatically, even with basic cameras. Affordable, compact LED solutions abound:</p>
+                            <ul>
+                                <li><strong>Ring Lights ($20–$50+):</strong> Even facial lighting, reduces shadows. Ex: Lume Cube Ring Light (12") (<code>zdnet.com</code>). Many offer dimming/color temp controls.</li>
+                                <li><strong>LED Panels (Compact Key Lights):</strong>
+                                    <ul>
+                                        <li><strong class="text-accent">Logitech Litra Glow (~$60, "Best Value"):</strong> Monitor-clip, soft diffused light, USB powered (<code>eurogamer.net</code>).</li>
+                                        <li><strong>Elgato Key Light Air/Mini (~$99+):</strong> Quality output. Mini is battery-powered/Wi-Fi (<code>zdnet.com</code>). Full size offers 2800 lumens, wide color temp range (2900K-7000K) (<code>eurogamer.net</code>).</li>
+                                    </ul>
+                                </li>
+                                <li><strong>Portable "Mobile" Lights (~$25):</strong> Ex: Newmowa 60W LED ("Alix Earle light") clips onto phone, USB chargeable, 3 modes/10 levels (<code>zdnet.com</code>). Surprisingly effective boost (<code>zdnet.com</code>).</li>
+                                <li><strong>Placement Strategy:</strong> Simple: One key light (45° angle), optional fill light/reflector opposite. Avoids harsh shadows/grain (<code>zdnet.com</code>).</li>
+                            </ul>
+                             <h6 class="text-tertiary font-semibold mt-5 mb-2">// Illumination Tactical Datafeeds & Fixes //</h6>
+                             <ul>
+                                <li><a href="#" target="_blank" rel="noopener">Setup Example (ZDNet Guide):</a> Light types, key vs fill placement (<code>zdnet.com</code>).</li>
+                                <li><strong>DIY Lighting Tips:</strong> Search YouTube for "DIY Streaming Lighting" (e.g., using LED strips/clamp lights).</li>
+                                <li><strong>Troubleshooting:</strong> Adjust color temp for natural skin tone. Check camera exposure settings (disable auto-exposure if flicker occurs).</li>
+                            </ul>
+                        </div>
+
+                        {/* -- 1.4 Capture Cards -- */}
+                        <div id="budget-capture" class="data-slate mb-8 gsap-slide-in-right scroll-margin-top">
+                             <h5>
+                                <svg class="icon" viewBox="0 0 24 24"><path d="M21 3H3c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-9 15c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm6-7H6V6h12v5z"/></svg> {/* Input/output icon */}
+                                Signal Acquisition: Capture Cards (Console/Camera)
+                             </h5>
+                            <p>Essential for routing external video sources (consoles, cameras) into your PC/Mac system.</p>
+                            <ul>
+                                <li><strong>1080p60 External Cards (~$100–$130):</strong> Ideal entry point.
+                                    <ul>
+                                        <li><strong>Elgato HD60 X:</strong> USB 3.0, 1080p60 capture, 4K60 HDR passthrough. Win/macOS driverless (<code>streamlabs.com</code>).</li>
+                                        <li><strong>AVerMedia Live Gamer Mini:</strong> Compact 1080p60, near-zero lag passthrough, built-in H.264 encoder (lightens PC load) (<code>streamlabs.com</code>).</li>
+                                    </ul>
+                                </li>
+                                <li><strong>Higher-End / 4K (~$150–$200+):</strong> For 4K recording or high framerate.
+                                    <ul>
+                                        <li><strong>AVerMedia Live Gamer Ultra (GC553):</strong> 4Kp60 / 1080p120 capture, VRR support (<code>streamlabs.com</code>).</li>
+                                        <li><strong>NZXT Signal 4K30:</strong> External 4K30 capture, doubles as Cam Link for DSLRs (<code>streamlabs.com</code>).</li>
+                                        <li><strong>Pro Tier:</strong> Magewell USB Capture, Elgato 4K60 Pro (PCIe) – beyond budget scope. Most streamers only need 1080p60 capture.</li>
+                                    </ul>
+                                </li>
+                                <li><strong>Mac vs PC Compatibility:</strong> Modern Elgato/AVerMedia externals support macOS (<code>streamlabs.com</code>). Ensure M1/M2 compatibility for drivers/software if needed. Internal PCIe cards are PC desktop only (unless using expensive Thunderbolt enclosures with Macs).</li>
+                             </ul>
+                             <h6 class="text-tertiary font-semibold mt-5 mb-2">// Capture Card Tactical Datafeeds & Fixes //</h6>
+                             <ul>
+                                <li><a href="#" target="_blank" rel="noopener">Setup Guide (Streamlabs 2025):</a> Connecting/configuring external cards (Elgato/AVerMedia examples for Win/Mac) (<code>streamlabs.com</code>).</li>
+                                <li><strong>Troubleshooting Black Screen:</strong> Disable HDCP on console source (PS5 allows this for games). Verify resolution/FPS settings in capture software. Check Elgato/Streamlabs support FAQs.</li>
+                                <li><a href="#" target="_blank" rel="noopener">Advanced (Dual PC via Network):</a> OmniStream SRT Guide as capture card alternative (<code>reddit.com</code>).</li>
+                             </ul>
+                        </div>
+
+                        {/* -- 1.5 Software -- */}
+                        <div id="budget-software" class="data-slate mb-8 gsap-scale-up scroll-margin-top">
+                            <h5>
+                                <svg class="icon" viewBox="0 0 24 24"><path d="M9.4 16.6 4.8 12l4.6-4.6L8 6l-6 6 6 6 1.4-1.4zm5.2 0 4.6-4.6-4.6-4.6L16 6l6 6-6 6-1.4-1.4z"/></svg> {/* Code/Software icon */}
+                                Core Systems: Streaming & Editing Software
+                            </h5>
+                             <p>The digital command center. Powerful free/low-cost options dominate (cross-platform).</p>
+                             <ul>
+                                <li><strong>Live Streaming Software (Encoders):</strong>
+                                    <ul>
+                                        <li><strong class="text-accent">OBS Studio (Free, Cross-Platform):</strong> Gold standard. Highly customizable (<code>captions.ai</code>). Use Auto-Config Wizard initially. Mac M1/M2 leverages VT H264 hardware encoding (check OBS forums for optimization tips <code>obsproject.com</code>).</li>
+                                        <li><strong>Streamlabs Desktop (Free, Win/Mac):</strong> OBS fork with integrated widgets/themes (<code>captions.ai</code>).</li>
+                                        <li><strong>Twitch Studio (Free, Win/Mac):</strong> Simplified guided setup, less flexible (<code>captions.ai</code>).</li>
+                                        <li><strong>Web Studios (StreamYard, Melon):</strong> Browser-based, simple multi-guest, less control (freemium).</li>
+                                    </ul>
+                                    <em>Tutorial:</em> <a href="#" target="_blank" rel="noopener">OBS Quickstart Guide</a> (<code>captions.ai</code>).
+                                </li>
+                                <li><strong>Video Editing (NLEs):</strong>
+                                     <ul>
+                                         <li><strong class="text-accent">DaVinci Resolve (Free, Cross-Platform):</strong> Pro-level editor, color, audio suite. Steep curve, immense power.</li>
+                                         <li><strong>CapCut (Free, Cross-Platform):</strong> Fast editing, auto captions. Great for social clips.</li>
+                                         <li><strong>iMovie (Free, Mac) / Clipchamp (Free, Win 11):</strong> Basic, easy-to-learn options.</li>
+                                     </ul>
+                                </li>
+                                <li><strong>Audio Editing & Processing:</strong>
+                                    <ul>
+                                        <li><strong>Audacity (Free, Cross-Platform):</strong> Standard for basic podcast audio editing.</li>
+                                        <li><strong class="text-accent">Auphonic (Free Tier, Web/Desktop):</strong> AI-powered auto-leveling & noise reduction. Upload audio, get broadcast-ready output (<code>aitools.neilpatel.com</code>).</li>
+                                        <li><strong class="text-accent">Adobe Podcast Enhance (Free, Web):</strong> AI noise/echo removal. Transforms rough audio remarkably.</li>
+                                    </ul>
+                                </li>
+                             </ul>
+                             <h6 class="text-tertiary font-semibold mt-5 mb-2">// Software Tactical Datafeeds & Fixes //</h6>
+                             <ul>
+                                 <li><a href="#" target="_blank" rel="noopener">Software Options Guide (Podigee):</a> Rundown for various budgets (<code>podigee.com</code>).</li>
+                                 <li><strong>Troubleshooting Crashes/Slowness:</strong> Check hardware requirements. Update GPU drivers (Resolve/OBS need GPU). Search software forums (Blackmagic, OBS Project) for error codes.</li>
+                                 <li><strong>Cross-Platform Tip:</strong> Use open formats (DNxHD, H.264 over ProRes/WMV). Cloud storage (Dropbox/Drive) helps move files. Use OBS Scene Export or cloud overlays (StreamElements) for consistent layouts.</li>
+                             </ul>
+                        </div>
+
+                        {/* -- 1.6 Budget Gaming Rigs -- */}
+                        <div id="budget-gaming-rigs" class="data-slate mb-8 gsap-slide-in-left scroll-margin-top">
+                             <h5>
+                                <svg class="icon" viewBox="0 0 24 24"><path d="M21 11.5v-1c0-.83-.67-1.5-1.5-1.5H17v-1c0-.55-.45-1-1-1h-2c-.55 0-1 .45-1 1v1H9v-1c0-.55-.45-1-1-1H6c-.55 0-1 .45-1 1v1H3.5c-.83 0-1.5.67-1.5 1.5v1c0 .83.67 1.5 1.5 1.5H5v1c0 .55.45 1 1 1h2c.55 0 1-.45 1-1v-1h6v1c0 .55.45 1 1 1h2c.55 0 1-.45 1-1v-1h1.5c.83 0 1.5-.67 1.5-1.5zm-10 2.5h-2V12H7v-2h2v-1.5h2V10h2v2h-2v2zM4 18h16V7h-1.17c.01.16.02.33.02.5v1c0 .83-.67 1.5-1.5 1.5H17v1c0 .55-.45 1-1 1h-2c-.55 0-1-.45-1-1v-1H9v1c0 .55-.45 1-1 1H6c-.55 0-1-.45-1-1v-1H3.5c-.83 0-1.5-.67-1.5-1.5v-1c0-.17.01-.34.02-.5H4v11z"/></svg> {/* Gamepad icon */}
+                                 Gaming Platforms for Streaming (Budget PCs)
+                             </h5>
+                             <p>For gamer-creators, the PC itself is mission-critical. Mid-range systems from recent years handle gaming + streaming well, leveraging hardware encoders.</p>
+                             <ul>
+                                <li><strong>CPU (Processor):</strong> Need multi-core.
+                                    <ul>
+                                        <li><strong>AMD Ryzen 5/7 (5000/7000+):</strong> Excellent core counts for value. Ryzen 5 5600X, 7 5800X3D (used), or 5 7600 are strong budget/mid options (<code>eurogamer.net</code>, <code>tomshardware.com</code>).</li>
+                                        <li><strong>Intel Core i5 (12th/13th Gen+):</strong> i5-12400 or i5-13400 offer good core mix (P+E cores). Can use cheaper DDR4 boards (<code>eurogamer.net</code>). Minimum 6 cores recommended.</li>
+                                    </ul>
+                                </li>
+                                <li><strong>GPU (Graphics Card):</strong> Needs hardware encoder.
+                                    <ul>
+                                        <li><strong class="text-accent">Nvidia NVENC (GTX 1660 Super+, all RTX):</strong> Gold standard for efficient streaming encode with minimal FPS hit (<code>eurogamer.net</code>). RTX 3050, RTX 4060 (~$300-350) are cost-effective. RTX 40-series also adds AV1 encoding (future proof).</li>
+                                        <li><strong>AMD Encoders (RDNA 3+):</strong> Significantly improved quality (RX 7600, 7700XT) vs older AMD cards, closing gap with NVENC (<code>eurogamer.net</code>). Nvidia still often preferred for streaming ecosystem (Broadcast app).</li>
+                                        <li><strong>Intel Quick Sync (iGPU):</strong> Can encode H.264, usable on extreme budget to offload CPU (lower quality than NVENC).</li>
+                                    </ul>
+                                </li>
+                                <li><strong>RAM (Memory):</strong> 16GB minimum for gaming + streaming. 32GB comfortable (especially if editing). DDR4 is cheap; DDR5 prices dropping (<code>eurogamer.net</code>).</li>
+                                <li><strong>PC Dominance for Gaming:</strong> Windows OS has widest game/driver support. Mac (Apple Silicon) not ideal for primary gaming rig. PC recommended if gaming is priority.</li>
+                                <li><strong>Example Budget Build (~$1000, 2025 Ref):</strong> CPU: Ryzen 5 7600 or 7 5700X3D. GPU: RTX 4060 8GB. RAM: 16-32GB DDR4/DDR5. Storage: 1TB+ NVMe SSD. (Ref: <code>tomshardware.com</code> builds). This spec handles 1080p gaming + streaming easily.</li>
+                                <li><strong>Console Streaming via PC:</strong> If gaming on console, PC requirements for capture/encoding are lower. Even an M1 Mac Mini with capture card can work (<code>console example</code>).</li>
+                             </ul>
+                              <h6 class="text-tertiary font-semibold mt-5 mb-2">// Platform Build Datafeeds & Fixes //</h6>
+                             <ul>
+                                 <li><a href="#" target="_blank" rel="noopener">Tom's Hardware Budget Builds:</a> Example configs from $500 up, explains CPU/GPU trade-offs (<code>tomshardware.com</code>).</li>
+                                 <li><strong>Upgrading Tips:</strong> Often adding RAM or a newer GPU (e.g., RTX 3060+) can make an existing PC stream-ready. Check prebuilt sales (e.g., Lenovo Legion, <code>pcgamer.com</code> reference).</li>
+                                 <li><a href="#" target="_blank" rel="noopener">Dual-PC Budget Guides:</a> Search LTT Forums / YouTube for "Budget Dual PC Streaming" for advanced setups using low-end second PC (<code>linustechtips.com</code> mention).</li>
+                             </ul>
+                        </div>
+
+                         {/* -- 1.7 Conclusion -- */}
+                        <div class="data-slate mt-10 gsap-fade-in">
+                            <h4>
+                                <svg class="icon" viewBox="0 0 24 24"><path d="m21.41 11.58-9-9C12.05 2.22 11.55 2 11 2H4c-1.1 0-2 .9-2 2v7c0 .55.22 1.05.59 1.42l9 9c.36.36.86.58 1.41.58.55 0 1.05-.22 1.41-.59l7-7c.37-.36.59-.86.59-1.41 0-.55-.23-1.06-.59-1.42zM13 20.01 4 11V4h7l9 9-7 7.01z"/><circle cx="6.5" cy="6.5" r="1.5"/> </svg> {/* Tag icon */}
+                                Unit 1 Conclusion: Smart Allocation
+                            </h4>
+                            <p>Leveraging budget-optimized hardware and accessible software allows creators to achieve high-quality output without requiring premier resource allocation. The "optimal" loadout prioritizes reliability and user proficiency. Iterate and upgrade strategically. Consult the provided datafeeds for deployment assistance.</p>
+                        </div>
+                    </section> 
+
+
+                    {/* --- 2. Mobile Setups Section --- */}
+                    <section id="mobile-ops" class="scroll-margin-top pt-10 gsap-slide-in-left">
+                        <h3 class="text-2xl md:text-3xl font-bold mb-6 glow-accent">// Unit 2: Mobile Operations - Field Creation Gear //</h3>
+                        <div class="data-slate mb-10 gsap-scale-up">
+                            <h4>
+                                <svg class="icon" viewBox="0 0 24 24"><path d="M17 1.01 7 1c-1.1 0-2 .9-2 2v18c0 1.1.9 2 2 2h10c1.1 0 2-.9 2-2V3c0-1.1-.9-1.99-2-1.99zM17 19H7V5h10v14z"/></svg> {/* Phone Icon */}
+                                Untethered Operations: Content Beyond the Desk
+                            </h4>
+                            <p>Content creation is no longer static. This unit focuses on compact, mobile-optimized systems for IRL streaming, field recording, and travel setups (<code>iOS // Android // Laptop</code>), highlighting recent (Q4 2024 - Q1 2025) tech advancements.</p>
+                        </div>
+
+                        {/* -- 2.1 Mobile Hardware -- */}
+                        <div id="mobile-hardware" class="data-slate mb-8 gsap-rotate-in scroll-margin-top">
+                            <h5>
+                                <svg class="icon" viewBox="0 0 24 24"><path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zm10 0c-1.1 0-1.99.9-1.99 2S15.9 22 17 22s2-.9 2-2-.9-2-2-2zM7.01 9.47l-.26.98c1.88.46 3.41 1.58 4.48 3.07l.88-.48A6.966 6.966 0 0 0 7.01 9.47zM20.8 4.04c-1.61-.54-3.3.16-3.84 1.77l-1.48 4.34c-.11.32.01.66.28.85l1.97 1.32C17.03 13 16 13.67 16 14.47V16h-4.26c-.44-2.23-2.28-3.96-4.48-4.34L6.74 9.7c-.37-1.43-1.78-2.4-3.22-2.4c-.33 0-.65.05-.96.13C1.28 7.96 0 9.63 0 11.5c0 1.56.87 2.91 2.16 3.57l.91 2.47c.24.65.85 1.06 1.55 1.06h9.43c1.1 0 2.11-.76 2.38-1.84l.91-3.73c.36-.25.65-.58.85-.97l1.97-1.32c.26-.19.39-.53.28-.85l-1.48-4.34c-.14-.4.06-.82.45-1.01l2.33-1.1c1.62-.77 2.28-2.69 1.51-4.3zm-5.06 5.91L14.5 5.78c.1-.32.47-.44.76-.31l2.33 1.1c.28.13.35.48.23.76l-1.25 4.17-2.16-1.46z"/></svg> {/* Tool Icon */}
+                                Portable Kit Components
+                            </h5>
+                            <ul>
+                                <li><strong>Smartphones/Tablets (Core Units):</strong> iPhone 15 Pro's USB-C enables high-quality video out/capture (<code>appleinsider.com</code>). iPad Pros run Final Cut/Logic. Android flagships (Samsung S24, Pixel) connect easily to USB mics. Use phone cages (e.g., SmallRig Rig) for accessory mounting (<code>amazon.com</code>, <code>alzodigital.com</code>).</li>
+                                <li><strong>Mobile Microphones (Audio Fidelity):</strong>
+                                     <ul>
+                                        <li><strong class="text-accent">Wireless Lavs (Freedom):</strong> DJI Mic 2 (Jan 2024, dual tx, onboard 32-bit float recording, phone connectivity via BT/receiver <code>soundguys.com</code>, <code>store.dji.com</code>). Rode Wireless PRO (CES 2025). Crucial for IRL streams (<code>uscreen.tv</code>).</li>
+                                        <li><strong>Shotgun Mics:</strong> RØDE VideoMicro II (~$80), mounts on phone/camera, improves sound drastically vs internal mic.</li>
+                                        <li><strong>Podcast Go-Kit Mic:</strong> Shure MV7i (USB/XLR hybrid), MFi certified, acts as 2-ch interface for iPad recording (<code>musictech.com</code>, <code>gearspace.com</code>).</li>
+                                     </ul>
+                                </li>
+                                <li><strong>Stability (Tripods, Gimbals):</strong> Compact tripods (Joby GorillaPod, Manfrotto Pixi). Phone mounts with cold shoes (Ulanzi ST-06). Gimbals for smooth moving shots: DJI Osmo Mobile 6, Zhiyun Smooth 5. Recent: Insta360 Flow (mid-2024, gimbal/selfie stick/tripod + AI tracking). Action Cams (GoPro 12, DJI Action 4) for rugged/wearable shots, can stream via phone/HDMI (<code>tvunetworks.com</code>).</li>
+                                <li><strong>Portable Lighting (Combat Darkness):</strong> Pocket LEDs: Aputure MC, Lume Cube Mini. Budget: Newmowa Mobile Light (~$25 clip-on <code>zdnet.com</code>). New: Zhiyun Molus X lights (CES 2025, credit-card size, USB-C PD powered <code>youtube.com</code>).</li>
+                                <li><strong>Advanced Rigs:</strong> Broadcast backpacks (LiveU Solo) for bonded cellular. Budget: Use phone 5G + secondary 4G hotspot. Adaptive bitrate apps (Streamlabs, Larix) help manage fluctuations.</li>
+                             </ul>
+                        </div>
+
+                        {/* -- 2.2 Mobile Software -- */}
+                        <div id="mobile-software" class="data-slate mb-8 gsap-slide-in-right scroll-margin-top">
+                            <h5>
+                                <svg class="icon" viewBox="0 0 24 24"><path d="M18 0H6C4.9 0 4 .9 4 2v20c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V2c0-1.1-.9-2-2-2zm-5 22h-2v-2h2v2zm3-3H8V5h8v14z"/></svg> {/* Mobile App Icon */}
+                                Mobile Command Software: Apps & Platforms
+                            </h5>
+                            <p>Apps enabling streaming, recording, and editing on the move (recent updates noted).</p>
+                             <ul>
+                                <li><strong>Mobile Live Streaming Apps:</strong>
+                                     <ul>
+                                         <li><strong>Platform Apps (Twitch/YT/TikTok):</strong> Easy start, limited features.</li>
+                                         <li><strong class="text-accent">Streamlabs Mobile (iOS/Android):</strong> OBS-like features (RTMP, overlays, alerts). Multi-stream with Prime. Screen capture support. Continuously updated (2025 ver.).</li>
+                                         <li><strong>Prism Live Studio (iOS/Android, Free):</strong> Multi-stream, overlays, chat. Favored by IRL streamers. Improved adaptive bitrate (early 2025).</li>
+                                         <li><strong>Larix Broadcaster (iOS/Android, Free):</strong> Pro-grade RTMP/SRT streaming. Full control over settings. Good for custom servers or bonded connections.</li>
+                                         <li><strong>TikTok/Instagram Updates:</strong> TikTok Live scheduling/mod tools (late 2024). IG Live Co-streaming. YellowDuck for OBS->IG streams (PC-side workaround).</li>
+                                    </ul>
+                                </li>
+                                <li><strong>Mobile Video/Audio Editing:</strong>
+                                    <ul>
+                                        <li><strong class="text-accent">CapCut (Free, iOS/Android/Desktop):</strong> Viral editor for vertical video (TikTok/Reels). Auto captions (Dec 2024 update).</li>
+                                        <li><strong>LumaFusion (~$30, iOS/Android):</strong> Pro mobile NLE. Multi-track, color correction. Came to Android late 2024.</li>
+                                        <li><strong>Adobe Premiere Rush (Freemium, Cross-Platform):</strong> Simple editing, syncs to CC. AI Auto Reframe added early 2025 (landscape to vertical).</li>
+                                        <li><strong>Dolby On (Free, Mobile):</strong> High-quality audio recording app with noise reduction. Great for quick voice notes/interviews.</li>
+                                     </ul>
+                                </li>
+                                <li><strong>Specialized Mobile Tools:</strong>
+                                     <ul>
+                                        <li><strong>Remote Interview Apps:</strong> Riverside.fm / Zencastr (web-based, mobile friendly). Riverside iOS app (Q4 2024 update) records local 1080p video.</li>
+                                        <li><strong>Monitoring/Chat Apps:</strong> Use secondary phone/tablet with Twitch app or stream dashboard to monitor chat/stats when main device is occupied.</li>
+                                     </ul>
+                                </li>
+                                <li><strong>Recent App Updates (Last ~3 Months):</strong>
+                                    <ul>
+                                        <li>YouTube Mobile: Go Live Together rolled out (Jan 2025).</li>
+                                        <li>Twitch Mobile: Horizontal streaming with chat overlay (Feb 2025).</li>
+                                        <li>Meta Horizon: Direct VR streaming from Quest headset (late 2024).</li>
+                                    </ul>
+                                </li>
+                                <li><strong>Laptop Game Streaming On-the-Go:</strong> Ensure strong Wi-Fi/5G tether. Use built-in webcam/mic (modern gaming laptops improving these, e.g., Razer Blade 14 2025 1080p cam) or packed peripherals.</li>
+                             </ul>
+                        </div>
+
+                        {/* -- 2.3 Mobile Examples -- */}
+                        <div id="mobile-examples" class="data-slate mb-8 gsap-scale-up scroll-margin-top">
+                             <h5>
+                                <svg class="icon" viewBox="0 0 24 24"><path d="M12 3C7.81 3 4.11 6.04 3.27 10.09c-.19.9.46 1.8 1.4 1.99.87.17 1.66-.34 1.92-1.17C7.13 8.1 9.37 6 12 6s4.87 2.1 5.4 4.91c.26.83 1.05 1.34 1.92 1.17.93-.19 1.59-1.09 1.4-1.99C19.89 6.04 16.19 3 12 3zm6.73 7.91c-.26-.83-1.05-1.34-1.92-1.17-.93.19-1.59 1.09-1.4 1.99C14.87 14.9 12.63 17 10 17s-4.87-2.1-5.4-4.91c-.19-.9-.86-1.62-1.79-1.78-.93-.16-1.8.46-1.99 1.4C-.05 16.96 3.04 20 7 20c2.97 0 5.58-1.74 6.73-4.27.97.47 2.06.77 3.27.77 2.76 0 5-2.24 5-5 0-2.09-1.29-3.88-3.12-4.6l-1.15 3.47z"/></svg> {/* Idea/Example Icon */}
+                                Real-World Mobile Deployment Scenarios
+                             </h5>
+                             <ul>
+                                <li><strong>Solo IRL City Stream (iPhone):</strong> iPhone on DJI OM gimbal -> DJI Mic 2 wireless lav -> Prism Live app -> Twitch. Power bank for longevity. Hear chat via TTS bot. (Ref: many Twitch IRL streams). Consider Speedify app for bonding networks if unstable.</li>
+                                 <li><strong>Mobile Podcast Duo (iPad):</strong> iPad Air -> Shure MV7i (USB) -> Second XLR mic into MV7i -> Record on Ferrite/GarageBand app. Two wired earbuds via splitter for monitoring. Run audio through Auphonic web UI for cleanup. (Based on MV7i capability <code>gearspace.com</code>).</li>
+                                <li><strong>Traveling Gamer Stream (Laptop):</strong> Gaming Laptop (ASUS ROG) -> HDMI camera via Razer Ripsaw X capture -> USB Mic (Samson Q2U) -> OBS on laptop -> Stream at 720p/900p over hotel Ethernet/5G tether. (Common event setup).</li>
+                             </ul>
+                            <p>Key principles: Lightweight gear, reliable audio, stable video, network adaptability.</p>
+                        </div>
+
+                         {/* -- 2.4 Mobile Tutorials -- */}
+                        <div id="mobile-tutorials" class="data-slate mb-8 gsap-fade-in scroll-margin-top">
+                            <h5>
+                                <svg class="icon" viewBox="0 0 24 24"><path d="M18 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 4h5v8l-2.5-1.5L6 12V4zm12 16H6v-2h12v2zm0-4H6v-2h12v2zm-3-4H6V8h9v4z"/></svg> {/* Book/Tutorial Icon */}
+                                Mobile Ops Training Modules
+                            </h5>
+                            <ul>
+                                <li><a href="#" target="_blank" rel="noopener">How to IRL Stream (ImmortalLefty, YouTube):</a> Prism/Streamlabs setup, alerts, chat reading (<code>youtube.com</code>).</li>
+                                <li><a href="#" target="_blank" rel="noopener">UnlimitedIRL Guide:</a> Advanced backpack rigs, software, safety (<code>unlimitedirl.com</code>, <code>streamingserver.io</code>). Useful sections for casuals too.</li>
+                                <li><a href="#" target="_blank" rel="noopener">Connecting Mics to iPhone (Apple Support):</a> Adapters for Lightning/USB-C (<code>musictech.com</code>). Android needs USB OTG.</li>
+                                <li><a href="#" target="_blank" rel="noopener">Filmic Pro Tutorial (MobileMotion):</a> Advanced mobile video recording app guide (Log formats, etc.).</li>
+                                <li><strong>Prism Live Setup Guides:</strong> Search community blogs/videos (e.g., "Prism Live custom RTMP guide") for specific features like widgets.</li>
+                             </ul>
+                             <p>Mobile ops provide unparalleled flexibility. Plan for power and connectivity contingencies.</p>
+                        </div>
+                    </section> 
+
+
+                    {/* --- 3. Cross-Platform Section --- */}
+                    <section id="platform-protocols" class="scroll-margin-top pt-10 gsap-slide-in-right">
+                         <h3 class="text-2xl md:text-3xl font-bold mb-6 glow-tertiary">// Unit 3: Cross-Platform Protocols (Mac vs PC) //</h3>
+                         <div class="data-slate mb-10 gsap-scale-up">
+                             <h4>
+                                <svg class="icon" viewBox="0 0 24 24"><path d="M20 18c1.1 0 1.99-.9 1.99-2L22 6c0-1.1-.9-2-2-2H4c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2H0v2h24v-2h-4zM4 6h16v10H4V6z"/></svg> {/* Monitor Icon */}
+                                System Integration: Bridging OS Divides
+                             </h4>
+                             <p>Many creators operate across Windows and macOS. This unit examines compatibility, ecosystem strengths, and best practices for seamless cross-platform workflows (incorporating 2024-2025 updates).</p>
+                         </div>
+
+                        {/* -- 3.1 Streaming Software Mac vs Win -- */}
+                        <div id="cross-stream-sw" class="data-slate mb-8 gsap-rotate-in scroll-margin-top">
+                            <h5>
+                                <svg class="icon" viewBox="0 0 24 24"><path d="M13 16.11V22h-2v-5.89l-5.11-2.23L5 8h14l-.89 5.88L13 16.11zM18.31 6H5.69L5.25 4h13.5l-.44 2z"/></svg> {/* Stream Icon */}
+                                Streaming Software Parity & Differences
+                            </h5>
+                            <ul>
+                                <li><strong class="text-accent">OBS Studio (Universal):</strong> Fully cross-platform with near feature parity (<code>captions.ai</code>). Mac version leverages Apple VT hardware encoding; PC uses NVENC/AMF/QuickSync. Some niche plugins/capture methods might be OS-specific (check plugin dev). AV1 encoding currently Windows-only via GPU (OBS 30+) (<code>OBS update notes</code>). HDR streaming currently Windows/Nvidia only in OBS.</li>
+                                <li><strong>Alternative Apps:</strong> Windows has XSplit/vMix. Mac has Ecamm Live/MimoLive (paid, easy UI). Cloud studios (StreamYard/Restream) are OS-agnostic. Stick to OBS/cloud for cross-platform consistency.</li>
+                                <li><strong>Integrations:</strong> Windows generally better for direct game capture, some overlay/bot tools. Mac tools often web-based or cross-platform (Stream Deck software, Touch Portal). macOS Continuity Camera offers easy iPhone-as-webcam (<code>captions.ai</code>).</li>
+                                <li><strong>Recent OBS Updates (v30+):</strong> UI improvements, AV1 (Win), stability enhancements (Mac). No major divergence in core features.</li>
+                            </ul>
+                        </div>
+
+                         {/* -- 3.2 Editing & Hardware -- */}
+                        <div id="cross-edit-hw" class="data-slate mb-8 gsap-slide-in-left scroll-margin-top">
+                            <h5>
+                                <svg class="icon" viewBox="0 0 24 24"><path d="m21.09 10.1-1.6-1.6a.5.5 0 0 0-.71 0L17.55 9.7l1.7 1.7 1.25-1.22a.5.5 0 0 0 .1-.38zm-2.44 2.51L13 18.27V21h2.73l5.65-5.66-2.73-2.73zM18 2a2 2 0 0 0-2 2v3h-3.18A9.976 9.976 0 0 0 2 17.82V20h2.18C7.03 15.15 11.15 11 16 11h1V8h3V4c0-1.1-.9-2-2-2z"/></svg> {/* Tools Icon */}
+                                Editing Software & Hardware Compatibility
+                            </h5>
+                             <ul>
+                                <li><strong>Video Editing Suites:</strong> Premiere Pro, DaVinci Resolve are cross-platform (smooth project sharing if using common codecs/shared storage). Final Cut Pro (Mac-only) improved Resolve XML export (late 2024) eases handoffs (<code>podigee.com</code>).</li>
+                                <li><strong>Audio Software:</strong> Audacity, Reaper, Pro Tools, Ableton are cross-platform. Logic Pro (Mac-only).</li>
+                                <li><strong>Hardware Driver Variance:</strong>
+                                     <ul>
+                                        <li><strong>Audio Interfaces:</strong> Many USB devices class-compliant on Mac, need ASIO drivers on Windows (e.g., Focusrite Scarlett). Some devices Windows-only (e.g., GoXLR mixer; Mac users need alternatives like Rodecaster Pro II). Elgato Wave Link software now supports Mac.</li>
+                                        <li><strong>Capture Cards:</strong> Major external cards work on Mac/Win (Elgato HD60X, AVerMedia <code>streamlabs.com</code>). Internal PCIe cards PC-only.</li>
+                                        <li><strong>Webcams/Cameras:</strong> Most USB cams work. Config software may vary. DSLR webcam utilities (Canon/Nikon) now on Mac too.</li>
+                                        <li><strong>GPUs:</strong> PC = Nvidia/AMD. Mac = Apple Silicon GPUs (older Macs used AMD). Software needs to support both architectures (Adobe/Resolve do). No eGPU support for Apple Silicon Macs.</li>
+                                    </ul>
+                                </li>
+                                <li><strong>Cross-Platform Utility Tactics:</strong>
+                                    <ul>
+                                        <li><strong>Cloud Storage/NAS:</strong> Dropbox/Drive for easy file access across OS.</li>
+                                        <li><strong>ExFAT Drive Format:</strong> For physical transfers readable/writable on both OS.</li>
+                                        <li><strong>OBS Scene Transfer:</strong> Use Export/Import or cloud overlays (StreamElements).</li>
+                                     </ul>
+                                </li>
+                            </ul>
+                        </div>
+
+                        {/* -- 3.3 Platform Strengths & Practices -- */}
+                        <div id="cross-practices" class="data-slate mb-8 gsap-scale-up scroll-margin-top">
+                             <h5>
+                                <svg class="icon" viewBox="0 0 24 24"><path d="M20.5 11H19V7c0-1.1-.9-2-2-2h-4c-1.1 0-2 .9-2 2v4H7c-1.1 0-2 .9-2 2v4c0 1.1.9 2 2 2h4c1.1 0 2-.9 2-2v-4h2c1.1 0 2-.9 2-2V7.5h1.5c.83 0 1.5-.67 1.5-1.5s-.67-1.5-1.5-1.5zm-7-4c0-.55.45-1 1-1h4c.55 0 1 .45 1 1v4h-6V7zm-2 6v4c0 .55-.45 1-1 1H7c-.55 0-1-.45-1-1v-4h6zm6-1c0 .55-.45 1-1 1h-2v4c0 .55-.45 1-1 1h-4c-.55 0-1-.45-1-1v-4H5V11c0-.55.45-1 1-1h4c.55 0 1 .45 1 1v1h2c.55 0 1 .45 1 1z"/></svg> {/* Puzzle/Integration Icon */}
+                                Leveraging Platform Strengths & Best Practices
+                            </h5>
+                             <ul>
+                                <li><strong>Windows Advantages:</strong> Widest hardware/game support. Best for gaming streams. More flexibility in audio routing (Voicemeeter). Access to specific AI tools (NVIDIA Broadcast features like Eye Contact <code>blogs.nvidia.com</code>, <code>youtube.com</code>). Preferred for VR.</li>
+                                <li><strong>macOS Advantages:</strong> Strong media production apps (Final Cut, Logic). High efficiency & stability (especially Apple Silicon). Continuity Camera (easy iPhone webcam). Reliable for long recording sessions. Use Apple VT encoder in OBS. Note audio capture limitations (needs tools like BlackHole/Loopback).</li>
+                                <li><strong>Using Both (Split Workflow):</strong>
+                                    <ul>
+                                        <li>Game on PC -> Capture Card -> Stream via OBS on MacBook (leverages Mac's efficiency for encoding).</li>
+                                        <li>Edit on Mac -> Render -> Encode/Upload via PC (less common now).</li>
+                                    </ul>
+                                </li>
+                                <li><strong>Peripheral Integration:</strong> Use class-compliant USB devices, standard HID/MIDI controllers (Stream Deck works on both <code>eurogamer.net</code>). Avoid proprietary Windows-only driver hardware if cross-use is needed.</li>
+                                 <li><strong>File Management:</strong> Beware OS-specific formats (ProRes large on PC, MKV needs remux for Mac editing). MP4 (H.264/AAC) is generally universal.</li>
+                            </ul>
+                        </div>
+
+                        {/* -- 3.4 Recent Developments -- */}
+                        <div id="cross-recent" class="data-slate mb-8 gsap-fade-in scroll-margin-top">
+                            <h5>
+                                <svg class="icon" viewBox="0 0 24 24"><path d="M12 16c3.87 0 7-3.13 7-7s-3.13-7-7-7-7 3.13-7 7 3.13 7 7 7zm0-12c2.76 0 5 2.24 5 5s-2.24 5-5 5-5-2.24-5-5 2.24-5 5-5zM1 22v-2c0-1.68 2-3.4 5-4.06A8.005 8.005 0 0 0 12 15c1.27 0 2.47-.3 3.55-.81.16-.08.32-.15.49-.23.48.31.99.59 1.54.8l2.1 1.05c-1.99 1.67-4.88 2.55-7.68 2.55C5.09 21.35 1.25 19.89 1 15.06V22zM23 19.45l-2.1-1.05c-.55-.22-1.06-.5-1.54-.81-.17.08-.33.15-.49.23A8.005 8.005 0 0 0 12 15c-.74 0-1.46-.09-2.15-.25 3-1.04 4.86-3.21 5.12-5.83C17.11 9.39 18.58 10 20 10c1.1 0 2-.9 2-2s-.9-2-2-2c-.22 0-.43.04-.64.1 1.49 1.24 2.35 3.16 2.49 5.23.01.23.02.46.02.69 0 .27-.01.53-.03.79z"/></svg> {/* Sync/Update Icon */}
+                                Recent Factors Impacting Cross-Platform Ops
+                            </h5>
+                             <ul>
+                                <li><strong>Apple Silicon Transition (Complete by 2024):</strong> Most key software now native or stable via Rosetta 2. Check third-party drivers for M1/M2/M3 compatibility. Apple Silicon offers high efficiency (good for mobile/laptop streaming).</li>
+                                <li><strong>Windows on Mac Limitations:</strong> No Boot Camp on Apple Silicon. VMs (Parallels) run Windows ARM, not ideal for high-performance gaming/streaming tasks requiring direct hardware access. Use native Mac apps or cloud alternatives if possible.</li>
+                                <li><strong>Software Licensing:</strong> Check if licenses cover both OS (Adobe CC does) or are platform-specific. Plan accordingly.</li>
+                                <li><strong>Cloud Collaboration Trend:</strong> Tools like Frame.io, cloud storage, and web-based editors ease cross-platform workflows by centralizing assets online.</li>
+                             </ul>
+                            <p class="mt-4"><strong>Key Takeaway:</strong> Mac vs PC is no longer a war of incompatibility – it’s quite feasible to incorporate both. Use the same software where possible, leverage hardware that works universally (mics, capture cards, etc.), and be mindful of format differences. If you’re a solo creator, pick what you’re most comfortable with: a PC offers flexibility and raw power (especially for gaming), while a Mac offers an optimized, streamlined experience (especially for production). Many creators actually use a combination (e.g., record on PC, edit on Mac). By understanding the strengths of each and using cross-platform tools, you can create a workflow that takes advantage of both worlds.</p>
+                        </div>
+                    </section> 
+
+
+                     {/* --- 4. AI Tools Section --- */}
+                    <section id="ai-augmentation" class="scroll-margin-top pt-10 gsap-slide-in-left">
+                        <h3 class="text-2xl md:text-3xl font-bold mb-6 glow-primary">// Unit 4: AI Augmentation - 2025 Force Multipliers //</h3>
+                         <div class="data-slate mb-10 gsap-scale-up">
+                            <h4>
+                                <svg class="icon" viewBox="0 0 24 24"><path d="M19.48 11.15C19.85 10.3 20 9.4 20 8.5 20 6.01 17.99 4 15.5 4c-1.48 0-2.8.73-3.59 1.86C11.19 5.11 10.15 4.5 9 4.5c-2.76 0-5 2.24-5 5 0 1.24.45 2.36 1.19 3.26-.94.73-1.59 1.85-1.68 3.08H2v2h2.04C4.37 20.43 7.57 22 11.5 22c3.94 0 7.15-1.59 7.47-4.06H21v-2h-1.52c-.09-1.24-.74-2.37-1.68-3.11l.68-.54zm-7.98 8.5c-2.7 0-4.95-1.47-5.84-3.56A5.475 5.475 0 0 1 9 14.5c2.18 0 4.08 1.23 5 3.01.17-.01.33-.01.5-.01 2.76 0 5-2.24 5-5 0-.04 0-.08-.01-.12-.19.7-.49 1.35-.89 1.94l-1.15-1.3c-.1-.11-.23-.2-.38-.27l-.26-.12c-.09.36-.21.71-.37 1.05-.25.54-.6 1-1.02 1.41l-1.56 1.56c-.25.25-.56.39-.89.39s-.64-.14-.89-.39l-1.56-1.56c-.42-.41-.77-.87-1.02-1.41-.16-.34-.28-.69-.37-1.05l-.26.12c-.15.07-.28.16-.38.27l-1.15 1.3c-.4-.59-.7-1.24-.89-1.94-.01.04-.01.08-.01.12 0 2.76 2.24 5 5 5 .17 0 .33 0 .5.01C15.58 17.15 13.7 18.5 11.5 18.5c-.3 0-.58-.02-.86-.05C10.98 19.35 11.22 20 11.5 20z"/></svg> {/* Brain/AI Icon */}
+                                Intelligence Infusion: Leveraging AI for Creation
+                            </h4>
+                             <p>Artificial Intelligence offers powerful tools to automate, enhance, and analyze content workflows. This unit highlights cutting-edge (2024-2025 release/update) AI tools impacting creators.</p>
+                        </div>
+
+                        {/* -- 4.1 AI Automation & Planning -- */}
+                        <div id="ai-automation" class="data-slate mb-8 gsap-rotate-in scroll-margin-top">
+                            <h5>
+                                <svg class="icon" viewBox="0 0 24 24"><path d="M17 8H7c-2.21 0-4 1.79-4 4s1.79 4 4 4h10c2.21 0 4-1.79 4-4s-1.79-4-4-4zm-1 7c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm-9-3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3z"/></svg> {/* Linked Icon / Process */}
+                                Automation & Ideation AI
+                            </h5>
+                            <ul>
+                                <li><strong>Language Models (ChatGPT, Bard, etc.):</strong> Brainstorm topics, generate scripts/shownotes, titles (<code>podigee.com</code>). Use integrated tools like Semrush ContentShake AI for SEO-friendly summaries (<code>podigee.com</code>) or Castmagic.ai (late 2024) for automated transcripts, quotes, chapters from audio. <strong class="text-accent">Directive: Always review & fact-check AI output.</strong></li>
+                                <li><strong>Monica (AI Narrator):</strong> Turns articles/PDFs/YT vids into listenable podcasts. Good for research consumption (<code>solveo.co</code>).</li>
+                                <li><strong>Gen-2 Video Ideas:</strong> Experimental: RUNWAY ML Gen-2 generates short clips from text prompts (potential for abstract B-roll).</li>
+                            </ul>
+                         </div>
+
+                         {/* -- 4.2 AI Editing -- */}
+                        <div id="ai-editing" class="data-slate mb-8 gsap-slide-in-right scroll-margin-top">
+                             <h5>
+                                <svg class="icon" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83zM3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM5.92 19H5v-.92l9.06-9.06.92.92L5.92 19z"/></svg> {/* Edit Icon */}
+                                Post-Production Acceleration via AI
+                            </h5>
+                            <ul>
+                                <li><strong class="text-accent">Descript (Text-Based Editing):</strong> Edit audio/video by editing text transcript. Features AI Overdub (voice cloning fix), filler word removal, new AI eye contact correction (2025) (<code>podigee.com</code>, <code>descript.com</code>). Cross-platform, free tier.</li>
+                                <li><strong>Veed.io (Online Editor):</strong> AI audio cleanup, auto-subtitles, AI video translation. "Script to Video" feature (late 2024) generates video from text (<code>solveo.co</code>).</li>
+                                <li><strong>Automatic Highlight Generators (Gaming):</strong> Eklipse.gg, Opus Clip analyze gameplay (Fortnite, Valorant etc.) to auto-clip highlights for social media (<code>eklipse.gg</code>, <code>opus.pro</code>). Saves hours repurposing streams (<code>deepgram.com</code>). Twitch testing similar features.</li>
+                                <li><strong>Alitu (Podcast Automator):</strong> Auto noise cleanup, leveling, intro/outro insertion, publishing. AI "um" remover & silence shortening added late 2024 (<code>solveo.co</code>, <code>podigee.com</code>). For non-engineers.</li>
+                                <li><strong>Adobe Sensei/Firefly (Premiere/Audition/Photoshop):</strong> Text-Based Editing, Auto Reframe, Scene Edit Detection in Premiere. Diagnostics (audio repair) in Audition. Generative Fill in Photoshop (thumbnails). Future Firefly for video gen on horizon.</li>
+                             </ul>
+                        </div>
+
+                        {/* -- 4.3 AI Audio Enhancement -- */}
+                        <div id="ai-audio-enhancement" class="data-slate mb-8 gsap-scale-up scroll-margin-top">
+                             <h5>
+                                <svg class="icon" viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg> {/* Audio Icon */}
+                                Sonic Perfection via AI Processing
+                            </h5>
+                            <ul>
+                                <li><strong class="text-accent">NVIDIA Broadcast (Win/RTX Only):</strong> Real-time AI noise/echo removal (magic for background sounds <code>blogs.nvidia.com</code>, <code>lockedinai.com</code>). AI background blur/replacement, auto frame, eye contact (<code>youtube.com</code>).</li>
+                                <li><strong>Auphonic (AI Leveling/Noise Reduction):</strong> Widely used post-processing for podcasts (<code>aitools.neilpatel.com</code>).</li>
+                                <li><strong class="text-accent">Adobe Podcast Enhance (Free Web Tool):</strong> AI-powered noise/echo removal, studio-like results on raw audio. "Witchcraft" according to users.</li>
+                                <li><strong>Other Real-Time Tools:</strong> Krisp.ai (cross-platform noise filter). OBS plugins like RNNoise (open source AI).</li>
+                                <li><strong>AI Voice Modulation/Cloning:</strong> Voicemod AI skins (character voices). ElevenLabs (GenFM for lifelike narration/cloning <code>solveo.co</code>). Use ethically and with rights.</li>
+                             </ul>
+                        </div>
+
+                         {/* -- 4.4 AI Audience Engagement -- */}
+                        <div id="ai-engagement" class="data-slate mb-8 gsap-slide-in-left scroll-margin-top">
+                            <h5>
+                                <svg class="icon" viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg> {/* User/Audience Icon */}
+                                Audience Connection & Growth Amplified by AI
+                            </h5>
+                            <ul>
+                                <li><strong>AI Analytics & Insights:</strong> YouTube retention graphs. Third-party tools (TubeBuddy, vidIQ) offer AI-driven tag/title/topic suggestions. Stream analysis tools (SullyGnome) may incorporate ML.</li>
+                                <li><strong>AI Chat Bots:</strong> Beyond simple commands. ChatGPT-based bots for interactive Q&A or roleplay on Twitch. Improved AI moderation (Twitch AutoMod). Bots summarizing chat or answering FAQs automatically (via APIs).</li>
+                                <li><strong>Experimental Viewer Engagement:</strong> AI providing stream commentary (BlenderBot). AI suggesting polls based on chat sentiment.</li>
+                                <li><strong>Understanding Platform AI:</strong> Leverage knowledge of YouTube/Twitch recommendation algorithms (favoring watch time/satisfaction). Tools like Morningfa.me offer AI coaching on content strategy based on performance data.</li>
+                            </ul>
+                        </div>
+
+                        {/* -- 4.5 AI Case Studies & Resources -- */}
+                        <div id="ai-resources" class="data-slate mb-8 gsap-fade-in scroll-margin-top">
+                             <h5>
+                                <svg class="icon" viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg> {/* Document Icon */}
+                                AI Field Reports & Deployment Guides
+                            </h5>
+                            <ul>
+                                <li><strong>Podcast Workflow Example:</strong> Using ChatGPT, Alitu/Auphonic, Descript, Podigee AI for streamlined production (ref: <code>podigee.com</code>).</li>
+                                <li><strong>YouTube Auto-Clipping Case Study:</strong> Streamer uses Opus Clip for automatic TikToks/Shorts, leading to significant channel growth (ref: <code>framedrop.ai</code> blog).</li>
+                                <li><strong>Resource:</strong> <a href="#" target="_blank" rel="noopener">Solveo.co: 7 AI Tools for Podcasting 2025</a> (<code>solveo.co</code>).</li>
+                                <li><strong>Resource:</strong> <a href="#" target="_blank" rel="noopener">Podigee: Top 10 AI Tools for Podcasters 2025</a> (<code>podigee.com</code>).</li>
+                                <li><strong>Resource (Example):</strong> "AI for Streamers 2025" talks/videos (e.g., by Andrew Davis/CultureHive <code>linkedin.com</code>) often showcase tools like AI music generators (Mubert) or auto-chaptering.</li>
+                            </ul>
+                            <p class="mt-4">Experiment with AI tools (many offer free tiers) to find force multipliers for your specific workflow. Stay updated via relevant communities and blogs.</p>
+                        </div>
+
+                        {/* -- 4.6 Conclusion -- */}
+                        <div class="data-slate mt-10 gsap-fade-in">
+                            <h4>
+                               <svg class="icon" viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-1 16H6c-.55 0-1-.45-1-1V6c0-.55.45-1 1-1h12c.55 0 1 .45 1 1v12c0 .55-.45 1-1 1zM9.91 15.59 11 13h2v4h-2v-2.83l-1.09 1.09-1.41-1.41zM11 7h2v4h-2z"/></svg> {/* End/Finish Flag Icon */}
+                                // Ops Manual Conclusion: Evolve & Dominate //
+                            </h4>
+                             <p>The 2025 content creation battlespace is dynamic. Leverage budget gear effectively, deploy mobile assets strategically, navigate cross-platform complexities with compatible tools, and integrate AI force multipliers. This intel provides the doctrine; successful execution depends on the operator. Adapt, optimize, and create.</p>
+                             <p class="text-sm text-gray-500 mt-4">// Sources cited inline via <code>code</code> tags. Referencing authorities like Eurogamer, Streamlabs, Podigee, Gearspace, etc. Ensure verification before major resource commitment. Update placeholder links for full functionality. //</p>
+                        </div>
+
+                    </section> 
+                 </section> 
+                 {/* --- END: 2025 Guide Content --- */}
+
+
+                {/* --- START: Existing Sections (Filled Placeholders) --- */}
+                <section id="the-forge" class="scroll-margin-top pt-10 gsap-fade-in">
+                    <h2 class="section-heading glow-primary glitch-heading" data-text="The Forge">The <span class="highlight text-secondary glow-secondary">Forge</span></h2>
+                    <h3 class="section-subheading text-gray-400 -mt-4">// Professional Podcast Studio Fabrication & Deployment //</h3>
+                     <div id="forge-intro" class="data-slate p-5 md:p-6 rounded border border-secondary/30 mb-10 gsap-scale-up">
+                        <h4><svg class="icon" viewBox="0 0 24 24"><path d="M13.85 22.25h-3.7c-.74 0-1.36-.54-1.45-1.27l-.27-1.89c-.27-.14-.53-.29-.79-.46l-1.8.72c-.7.26-1.47-.09-1.81-.73L2.2 15.13c-.34-.66-.2-1.44.31-1.84l1.53-1.19c-.01-.15-.02-.3-.02-.46 0-.15.01-.31.02-.46L2.51 9.98C2 9.58 1.86 8.81 2.2 8.15l1.81-3.13c.34-.64 1.11-.99 1.81-.73l1.8.72c.26-.17.52-.32.79-.46l.27-1.91c.09-.7.71-1.25 1.45-1.25h3.7c.74 0 1.36.54 1.45 1.27l.27 1.89c.27.14.53.29.79.46l1.8-.72c.7-.26 1.47.09 1.81.73l1.81 3.13c.34.66-.2 1.44-.31 1.84l-1.53 1.19c.01.15.02.3.02.46s-.01.31-.02.46l1.53 1.19c.51.4.65 1.18.31 1.84l-1.81 3.13c-.34-.64-1.11-.99-1.81-.73l-1.8-.72c-.26-.17-.52-.32-.79-.46l-.27 1.91c-.1.68-.71 1.22-1.45 1.22zm-2.6-8.5c1.93 0 3.5-1.57 3.5-3.5s-1.57-3.5-3.5-3.5-3.5 1.57-3.5 3.5 1.57 3.5 3.5 3.5z"/></svg> Installation Overview</h4>
+                        <p>Pixel Playgrounds offers <strong>turnkey podcast studio installation services</strong> in the Nashville sector. From empty rooms to fully operational broadcast centers, we handle strategic planning, hardware procurement based on transparent consultation, professional setup, cable discipline, and essential system handoff training.</p>
+                        <p>Stop wrestling with incompatible gear cascades, signal chain chaos, or acoustically unsound environments. We forge <em class="text-secondary">reliable, broadcast-quality systems</em> tailored to your content objectives and operational budget, ensuring mission-critical audio fidelity from Activation Day One.</p>
+                     </div>
+                    <div id="installation-tiers" class="data-slate mb-10 gsap-rotate-in scroll-margin-top">
+                         <h4><svg class="icon" viewBox="0 0 24 24"><path d="M12 3 4 9v12h16V9l-8-6zm-3 9H7v-2h2v2zm0 4H7v-2h2v2zm0 4H7v-2h2v2zm4 0h-2v-2h2v2zm0-4h-2v-2h2v2zm0-4h-2V9h2v2zm4 8h-2v-2h2v2zm0-4h-2v-2h2v2zm0-4h-2V9h2v2z"/></svg> Service Tier Packages</h4>
+                         <p>We offer tiered installation packages, adaptable to your specific mission requirements:</p>
+                         <ul>
+                             <li><strong>Core Setup (Tier 1):</strong> Ideal for solo creators or starters. Includes consultation, procurement guidance, installation of 1-2 microphones, interface/mixer setup, basic software config (OBS/DAW), and cable management for a clean, functional workspace.</li>
+                             <li><strong>Pro Broadcast (Tier 2):</strong> Designed for multi-host podcasts or video streaming. Encompasses Tier 1 plus multi-mic setup (up to 4), camera integration (webcam/DSLR via capture card), basic lighting deployment, advanced software routing, and optional Stream Deck configuration.</li>
+                             <li><strong>Custom Command (Tier 3+):</strong> Fully bespoke solutions for complex needs. Multi-room setups, video switching systems, advanced acoustic treatment design & installation, network integration, custom hardware fabrication. Requires in-depth consultation and project scoping.</li>
+                         </ul>
+                         <p>All tiers include foundational handoff training on core system operation. Advanced training modules available separately.</p>
+                    </div>
+                    <div id="acoustic-upsell" class="data-slate gsap-slide-in-left scroll-margin-top">
+                        <h4>
+                            <svg class="icon" viewBox="0 0 24 24"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg> {/* Sound Wave Icon */}
+                             Acoustic Environment Optimization
+                        </h4>
+                        <img src="https://placehold.co/300x200/010307/0affa0?text=Acoustic+Treatment+Diagram&font=orbitron" alt="Acoustic Treatment Diagram Example" class="slate-graphic img-float-right gsap-scale-up" loading="lazy">
+                        <p>Even the most advanced hardware underperforms in an untreated room. <strong class="text-accent">Room reflections, echo, and reverb</strong> significantly degrade audio clarity. We strongly recommend considering acoustic treatment as part of any professional setup.</p>
+                        <p>Pixel Playgrounds offers tailored acoustic analysis and treatment plans as an add-on service or integrated into Tier 3+ packages. Solutions range from strategically placed absorption panels and bass traps to full room redesign for optimal sound isolation and capture quality. Investing in acoustics provides a <em class="text-primary">dramatic and permanent upgrade</em> to your sound signature.</p>
+                    </div>
+                </section>
+
+                <section id="our-process" class="scroll-margin-top pt-10 gsap-fade-in">
+                    <h2 class="section-heading glow-primary glitch-heading" data-text="Operational Process">Operational <span class="highlight text-accent glow-accent">Process</span></h2>
+                    <h3 class="section-subheading text-gray-400 -mt-4">// Your Trajectory to Broadcast Readiness //</h3>
+                    <div id="process-steps" class="data-slate mb-10 process-timeline" style="counter-reset: step-counter;"> {/* GSAP will target this parent */}
+                        <h4><svg class="icon" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/></svg> Mission Stages</h4>
+                        {/* Process steps already detailed in 2025 guide section. Keeping structure. */}
+                        <div class="process-step"><h5>Phase 1: Recon & Strategy (Consultation)</h5><p>We discuss your vision, content goals, space, budget, and technical needs via Holo-Call or Secure Comms. This initial deep dive is <strong>FREE</strong>.</p></div>
+                        <div class="process-step"><h5>Phase 2: Blueprint & Acquisition (Proposal)</h5><p>Receive a detailed proposal outlining recommended hardware, acoustic solutions (if applicable), installation plan, and transparent pricing. Requires deposit to proceed.</p></div>
+                        <div class="process-step"><h5>Phase 3: Logistics & Procurement</h5><p>We acquire all necessary components and coordinate the installation timeline based on your availability and hardware delivery.</p></div>
+                        <div class="process-step"><h5>Phase 4: The Forge (Installation)</h5><p>Our technicians expertly install, connect, configure, and test all equipment. Cable management and clean setup are paramount.</p></div>
+                        <div class="process-step"><h5>Phase 5: Systems Check & Handoff</h5><p>We provide basic operational guidance, ensure system stability, and answer initial questions. Final payment confirms mission success.</p></div>
+                    </div>
+                     <div id="pricing-philosophy" class="data-slate gsap-scale-up scroll-margin-top">
+                        <h4><svg class="icon" viewBox="0 0 24 24"><path d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-.9.6-1.75 1.85-1.75 1.25 0 1.85.85 1.9 1.75H14.5c-.05-1.72-1.3-3-3.1-3-1.9 0-3.3 1.11-3.3 2.8 0 1.38.9 2.39 2.45 2.85 2.26.59 3 1.2 3 2.15 0 .9-.6 1.75-1.85 1.75-1.25 0-1.85-.85-1.9-1.75H8.9c.05 1.72 1.3 3 3.1 3 1.9 0 3.3-1.11 3.3-2.8 0-1.38-.9-2.39-2.5-2.85zM12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/></svg> Resource Allocation Protocol (Pricing)</h4>
+                         <p>Our structure prioritizes transparency. Installation fees are based on project complexity and time commitment (defined in the agreed Tier or Custom scope), billed separately from hardware costs.</p>
+                         <ul>
+                             <li><strong class="text-accent">Hardware Procurement:</strong> We can procure gear on your behalf at pass-through cost (plus a small handling fee detailed in proposal) or provide a vetted shopping list for you to purchase directly. No hidden markups.</li>
+                             <li><strong class="text-accent">Installation Labor:</strong> Quoted as a flat rate for defined Tiers or based on estimated hours for custom projects. You know the labor cost upfront.</li>
+                             <li><strong class="text-accent">Optional Services:</strong> Acoustic analysis/treatment, advanced training, and ongoing support are quoted separately based on requirements.</li>
+                         </ul>
+                         <p>We optimize for <em class="text-primary">long-term system reliability and operational value</em> within your specified budget parameters.</p>
+                     </div>
+                </section>
+
+                 <section id="partner-opps" class="scroll-margin-top pt-10 gsap-slide-in-right">
+                    <h2 class="section-heading glow-secondary glitch-heading" data-text="Join the Collective">Join the <span class="highlight text-tertiary glow-tertiary">Collective</span></h2>
+                    <h3 class="section-subheading text-gray-400 -mt-4">// Tactical Partnerships & Recruitment //</h3>
+                    <div class="data-slate gsap-rotate-in">
+                        <h4><svg class="icon" viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg> Partnership & Alliance Opportunities</h4>
+                        <p>Pixel Playgrounds actively seeks alliances with skilled operatives and strategic partners within the Nashville creator tech ecosystem:</p>
+                        <div class="partner-opp">
+                            <strong>Freelance Installation Technicians (Nashville Sector):</strong> Seeking experienced A/V commandos proficient in signal flow diagnostics, precise hardware deployment, superior cable discipline, and professional client interaction. Must demonstrate technical mastery and reliability under pressure. Submit qualifications via Secure Comms channel below.
+                        </div>
+                        <div class="partner-opp">
+                            <strong>Affiliate Sales & Referral Nodes:</strong> Content strategists, consultants, synergistic tech providers, or influential creators interested in funneling qualified leads requiring studio fabrication services. Generous commission protocols established. Initiate contact via Secure Comms for details.
+                        </div>
+                         <p>Augment our capabilities. Enhance the signal quality across the Nashville Grid. Join the Pixel Playgrounds network.</p>
+                    </div>
+                </section>
+
+                <section id="comms-channel" class="scroll-margin-top pt-10 gsap-fade-in">
+                    <h2 class="section-heading glow-secondary glitch-heading" data-text="Secure Comms">Secure <span class="highlight text-accent glow-accent">Comms</span></h2>
+                    <h3 class="section-subheading text-gray-400 -mt-4">// Initiate Contact // Request Consultation // Apply //</h3>
+                    <div id="secure-comms" class="data-slate p-6 md:p-8 rounded border border-accent/40 gsap-scale-up scroll-margin-top">
+                        <h4><svg class="icon" viewBox="0 0 24 24"><path d="M21.99 4c0-1.1-.89-2-1.99-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h14l4 4-.01-18zM18 14H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/></svg> Establish Secure Datalink</h4>
+                        <p class="mb-6">Utilize the interface below for initiating consultations, partnership proposals, or general inquiries. For immediate, high-priority voice comms, activate Holo-Call: <a href="tel:+16156064969" class="text-accent font-bold hover:text-secondary">(615) 606-4969</a>.</p>
+                        
+                        {/* Form remains simulation-based */}
+                        <form id="interface-request-form" action="#" method="POST"> 
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                                <div>
+                                    <label for="name-input">Callsign / Name:</label>
+                                    <input type="text" id="name-input" name="name" required placeholder="e.g., Commander Shepard">
+                                </div>
+                                <div>
+                                    <label for="email-input">Secure Email Channel:</label>
+                                    <input type="email" id="email-input" name="email" required placeholder="e.g., shepard@normandy.sr2">
+                                </div>
+                            </div>
+                            <div class="mb-6">
+                                <label for="subject-input">Subject / Inquiry Type:</label>
+                                <select id="subject-input" name="subject" required>
+                                    <option value="">Select Transmission Purpose...</option>
+                                    <option value="Consultation Request">Consultation Request (Podcast Studio)</option>
+                                     <option value="Installation Inquiry">Installation Inquiry (Specific Tier)</option>
+                                    <option value="Partnership Inquiry (Installer)">Partnership Inquiry (Technician)</option>
+                                     <option value="Partnership Inquiry (Sales)">Partnership Inquiry (Referral Node)</option>
+                                    <option value="General Inquiry">General Inquiry / Message</option>
+                                </select>
+                            </div>
+                            <div class="mb-6">
+                                <label for="message-input">Message / Mission Brief:</label>
+                                <textarea id="message-input" name="message" rows="5" required placeholder="Detail your request, proposal, or inquiry specifics here... Provide essential context for efficient processing."></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-secondary-ops w-full">
+                                <svg class="icon" viewBox="0 0 24 24"><path d="M2.01 21 23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+                                Transmit Signal Packet
+                            </button>
+                        </form>
+                        <div id="form-message-interface" style="display: none;"> {/* Initial state hidden */}
+                             {/* JS will inject status messages here */}
+                        </div>
+                    </div>
+                </section>
+                 {/* --- END: Existing Sections --- */}
+
+             </div>
+        </div>
+     </main>
+
+    <footer id="signal-cutoff">
+        <div class="container-command text-center text-sm text-gray-500">
+            <p class="mb-4">// Pixel Playgrounds // Nashville Sector // Core Command V6.1 Online //</p>
+            <div class="flex flex-wrap justify-center items-center gap-x-4 gap-y-2 mb-4">
+                <a href="tel:+16156064969" class="contact-link"><svg class="icon" viewBox="0 0 24 24"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/></svg>Holo-Call: (615) 606-4969</a> 
+                 <span class="hidden md:inline">|</span>
+                <a href="https://www.instagram.com/pixelplaygroundsnashville/" target="_blank" rel="noopener noreferrer" class="contact-link insta-link"><svg class="icon" viewBox="0 0 24 24"><path d="M7.8 2h8.4C19.4 2 22 4.6 22 7.8v8.4a5.8 5.8 0 0 1-5.8 5.8H7.8C4.6 22 2 19.4 2 16.2V7.8A5.8 5.8 0 0 1 7.8 2m-.2 2A3.6 3.6 0 0 0 4 7.6v8.8C4 18.39 5.61 20 7.6 20h8.8a3.6 3.6 0 0 0 3.6-3.6V7.6C20 5.61 18.39 4 16.4 4H7.6m9.65 1.5a1.25 1.25 0 0 1 1.25 1.25A1.25 1.25 0 0 1 17.25 8 1.25 1.25 0 0 1 16 6.75a1.25 1.25 0 0 1 1.25-1.25M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3z"/></svg>IG Relay Feed</a>
+                 <span class="hidden md:inline">|</span>
+                 <a href="#comms-channel" class="contact-link"><svg class="icon" viewBox="0 0 24 24"><path d="M21.99 4c0-1.1-.89-2-1.99-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h14l4 4-.01-18zM18 14H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/></svg>Secure Comms Form</a>
+            </div>
+            <p>&copy; <span id="current-year"></span> Pixel Playgrounds LLC. All Rights Reserved. Transmission Encrypted. System Stable.</p>
+        </div>
+    </footer>
+
+</div> {/* End Content Wrapper */}
+
+<script>
+    // --- Global Scope Variables ---
+    let galaxyScene, galaxyCamera, galaxyRenderer, galaxyComposer; // For background
+    let supernovaScene, supernovaCamera, supernovaRenderer, supernovaComposer; // For intro
+    let stars, nebulaParticles, supernovaParticles;
+    let mouse = new THREE.Vector2();
+    let targetCameraPos = new THREE.Vector3();
+    const clock = new THREE.Clock();
+
+    let synth, metalSynth, noiseSynth, ambientDrone;
+    let uiSoundEnabled = false;
+
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    // --- Tone.js Sound Setup ---
+    function setupSounds() {
+        try {
+            synth = new Tone.Synth({
+                oscillator: { type: 'pulse', width: 0.4 }, // Sharper sound
+                envelope: { attack: 0.005, decay: 0.1, sustain: 0.02, release: 0.2 }
+            }).toDestination();
+            synth.volume.value = -15;
+
+            metalSynth = new Tone.MetalSynth({
+                frequency: 120, envelope: { attack: 0.001, decay: 0.15, release: 0.1 },
+                harmonicity: 4.5, modulationIndex: 20, resonance: 3000, octaves: 0.8
+            }).toDestination();
+            metalSynth.volume.value = -10; // Slightly louder for impact
+
+            noiseSynth = new Tone.NoiseSynth({
+                noise: { type: 'pink' }, // Pink noise is less harsh
+                envelope: { attack: 0.002, decay: 0.08, sustain: 0, release: 0.1 }
+            }).toDestination();
+            noiseSynth.volume.value = -22;
+
+            uiSoundEnabled = true;
+            console.log("Tone.js Initialized");
+        } catch (e) {
+            console.error("Tone.js setup failed:", e);
+            uiSoundEnabled = false;
+        }
+    }
+
+    function playSound(type, note = 'C4', duration = '16n', delay = 0) {
+        if (!uiSoundEnabled || prefersReducedMotion) return;
+        const now = Tone.now() + delay;
+        try {
+            if (type === 'hover' && synth) synth.triggerAttackRelease(note, duration, now);
+            if (type === 'click' && synth) synth.triggerAttackRelease('E4', '12n', now);
+            if (type === 'ctaClick' && metalSynth) metalSynth.triggerAttackRelease('8n', now, 0.8); // Velocity
+            if (type === 'error' && noiseSynth) noiseSynth.triggerAttackRelease('16n', now);
+            if (type === 'success' && synth) synth.triggerAttackRelease('G5', '8n', now);
+             if (type === 'glitch' && noiseSynth) noiseSynth.triggerAttackRelease('32n', now);
+             if (type === 'reveal' && synth) synth.triggerAttackRelease('A3', '8n', now);
+        } catch (e) { console.error("Tone.js play error:", e); }
+    }
+
+    function enableAudioContext() {
+        if (uiSoundEnabled) return; // Already enabled or failed
+        if (Tone.context.state !== 'running') {
+            Tone.start().then(() => {
+                console.log("AudioContext started!");
+                setupSounds();
+            }).catch(e => {
+                console.error("Could not start AudioContext:", e);
+                uiSoundEnabled = false; // Ensure it stays disabled
+            });
+        } else {
+             setupSounds(); // Context was already running
+        }
+        // Remove interaction listeners
+        document.body.removeEventListener('click', enableAudioContext);
+        document.body.removeEventListener('mousemove', enableAudioContext);
+        document.body.removeEventListener('touchstart', enableAudioContext);
+    }
+    // Add multiple listeners for robust activation
+    document.body.addEventListener('click', enableAudioContext, { once: true });
+    document.body.addEventListener('mousemove', enableAudioContext, { once: true });
+    document.body.addEventListener('touchstart', enableAudioContext, { once: true });
+
+
+    // --- Three.js Supernova Intro ---
+    function initSupernova() {
+        const container = document.getElementById('supernova-container');
+        if (!container || prefersReducedMotion) {
+             // If no container or reduced motion, skip supernova and show content immediately
+             console.log("Skipping supernova animation (reduced motion or container missing).")
+             finishSupernova();
+             document.body.style.opacity = 1; // Make body immediately visible if skipping
+             return;
+        }
+        const canvas = document.getElementById('supernova-canvas');
+        supernovaScene = new THREE.Scene();
+        supernovaCamera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        supernovaCamera.position.z = 50;
+
+        supernovaRenderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true });
+        supernovaRenderer.setSize(window.innerWidth, window.innerHeight);
+        supernovaRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+        // Post-processing for bloom
+        try {
+            const renderScene = new THREE.RenderPass(supernovaScene, supernovaCamera);
+            const bloomPass = new THREE.UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.8, 0.5, 0.1); // Adjust params: strength, radius, threshold
+            supernovaComposer = new THREE.EffectComposer(supernovaRenderer);
+            supernovaComposer.addPass(renderScene);
+            supernovaComposer.addPass(bloomPass);
+        } catch(e) {
+            console.error("Error setting up supernova post-processing (EffectComposer/Passes might be missing or failing):", e);
+            supernovaComposer = null; // Fallback to direct rendering
+        }
+
+
+        // Supernova Particle System
+        const particleCount = 5000;
+        const positions = new Float32Array(particleCount * 3);
+        const colors = new Float32Array(particleCount * 3);
+        const sizes = new Float32Array(particleCount);
+        const color = new THREE.Color();
+
+        for (let i = 0; i < particleCount; i++) {
+            const i3 = i * 3;
+            positions[i3] = (Math.random() - 0.5) * 2;
+            positions[i3 + 1] = (Math.random() - 0.5) * 2;
+            positions[i3 + 2] = (Math.random() - 0.5) * 2;
+
+            const randColor = Math.random();
+            if (randColor < 0.4) color.setHSL(0.1, 1, 0.6); // Yellow/Orange
+            else if (randColor < 0.7) color.setHSL(0.05, 1, 0.55); // Orange/Red
+            else if (randColor < 0.9) color.setHSL(0.0, 0, 1.0); // White hot
+            else color.setHex(0xff40a0); // Accent Pink
+
+            colors[i3] = color.r; colors[i3 + 1] = color.g; colors[i3 + 2] = color.b;
+            sizes[i] = Math.random() * 2 + 0.5;
+        }
+
+        const geometry = new THREE.BufferGeometry();
+        geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+        geometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
+
+        // ShaderMaterial for varying point size (essential)
+        const vertexShader = `
+          attribute float size;
+          attribute vec3 color; // Changed from customColor
+          varying vec3 vColor;
+          void main() {
+            vColor = color;
+            vec4 mvPosition = modelViewMatrix * vec4( position, 1.0 );
+            gl_PointSize = size * ( 300.0 / -mvPosition.z ); // Adjust size based on distance
+            gl_Position = projectionMatrix * mvPosition;
+          }
+        `;
+        const fragmentShader = `
+          varying vec3 vColor;
+          void main() {
+            // Simple radial gradient for soft edges
+            float strength = 1.0 - 2.0 * distance(gl_PointCoord, vec2(0.5));
+             if (strength < 0.0) discard; // Make edges transparent
+            gl_FragColor = vec4(vColor, strength * 0.8); // Adjust alpha based on gradient
+          }
+        `;
+
+        const material = new THREE.ShaderMaterial({
+            uniforms: {},
+            vertexShader: vertexShader,
+            fragmentShader: fragmentShader,
+            vertexColors: true, // Use attribute color
+            blending: THREE.AdditiveBlending,
+            depthWrite: false,
+            transparent: true
+        });
+
+        supernovaParticles = new THREE.Points(geometry, material);
+        supernovaScene.add(supernovaParticles);
+
+        // --- Animation Timeline (GSAP for controlling the explosion) ---
+        const tl = gsap.timeline({ onComplete: finishSupernova });
+        const explosionDuration = 2.5;
+
+        tl.call(() => playSound('ctaClick', 'C2', '1n', 0), [], 0);
+        tl.call(() => playSound('noiseSynth', 'C4', '0.5n', 0.1), [], 0);
+
+        // Define endArray calculation in a function for clarity
+         const calculateEndPositions = () => {
+            const finalPositions = new Float32Array(particleCount * 3);
+            const basePositions = supernovaParticles.geometry.attributes.position.array;
+            const explosionRadius = 100 + Math.random() * 150; // Randomize final explosion size slightly each load
+
+            for (let i = 0; i < particleCount; i++) {
+                const i3 = i * 3;
+                // Use normalized initial direction from center
+                 const dir = new THREE.Vector3(basePositions[i3], basePositions[i3+1], basePositions[i3+2]);
+                 if(dir.lengthSq() === 0) { // Handle potential zero vector at center
+                     dir.set(Math.random() - 0.5, Math.random() - 0.5, Math.random() - 0.5);
+                 }
+                 dir.normalize();
+
+                 const dist = (0.5 + Math.random() * 0.8) * explosionRadius; // Vary individual particle distance more
+
+                 finalPositions[i3] = dir.x * dist;
+                 finalPositions[i3 + 1] = dir.y * dist;
+                 finalPositions[i3 + 2] = dir.z * dist;
+             }
+             return finalPositions;
+         };
+
+        tl.to(supernovaParticles.geometry.attributes.position.array, {
+            duration: explosionDuration,
+            endArray: calculateEndPositions(), // Execute calculation here
+            ease: "power3.out",
+            onUpdate: () => { if(supernovaParticles) supernovaParticles.geometry.attributes.position.needsUpdate = true; } // Check if particles exist
+        }, 0);
+
+        tl.to(supernovaParticles.geometry.attributes.size.array, {
+            duration: explosionDuration * 0.8,
+            endArray: new Float32Array(particleCount).fill(0.1),
+            ease: "power2.in",
+            onUpdate: () => { if(supernovaParticles) supernovaParticles.geometry.attributes.size.needsUpdate = true; }
+        }, explosionDuration * 0.2);
+
+         if (supernovaComposer && bloomPass) { // Only animate bloom if composer exists
+            tl.to(bloomPass, { strength: 4, duration: 0.2, ease: "power4.out" }, 0);
+            tl.to(bloomPass, { strength: 1.2, duration: explosionDuration * 0.8, ease: "power2.inOut" }, 0.2);
+        }
+
+         tl.to(container, { opacity: 0, duration: 1.5, ease: "power1.inOut" }, explosionDuration - 0.5);
+
+        animateSupernova();
+    }
+
+    function animateSupernova() {
+        // Check if cleanup has occurred
+         if (!supernovaScene || !supernovaRenderer) {
+            console.log("Stopping supernova animation loop.");
+             return;
+         }
+        requestAnimationFrame(animateSupernova); // Request next frame first
+
+        try {
+             if(supernovaComposer) {
+                 supernovaComposer.render();
+             } else {
+                 supernovaRenderer.render(supernovaScene, supernovaCamera); // Fallback rendering
+             }
+         } catch(e) {
+             console.error("Error during supernova render:", e);
+             // Potentially stop animation loop here if errors persist
+         }
+
+    }
+
+    function finishSupernova() {
+        console.log("Finishing supernova...");
+        const container = document.getElementById('supernova-container');
+        if (container) {
+            container.style.opacity = 0;
+            container.style.pointerEvents = 'none';
+            setTimeout(() => { if(document.body.contains(container)) container.remove(); }, 2000);
+        }
+
+        // Cancel animation frame? Not straightforward, rely on checks in animate func.
+        
+        // Clean up Three.js resources for supernova carefully
+         if (supernovaParticles) {
+             if(supernovaParticles.geometry) supernovaParticles.geometry.dispose();
+             if(supernovaParticles.material) {
+                // Dispose shader materials carefully
+                 if (supernovaParticles.material.dispose) supernovaParticles.material.dispose();
+                // If uniforms had textures, dispose them here too
+             }
+             if(supernovaScene && supernovaScene.remove) supernovaScene.remove(supernovaParticles);
+        }
+        supernovaParticles = null;
+         // Dispose of composer passes if they exist
+         if(supernovaComposer) {
+             supernovaComposer.passes.forEach(pass => {
+                 if (pass.dispose) pass.dispose();
+                 // Check for textures or render targets in passes that need disposal
+             });
+         }
+
+        // Clear references
+        supernovaScene = null;
+        supernovaCamera = null;
+        supernovaRenderer = null; // Don't call dispose() on renderer if canvas might be reused? Or do? Check docs. Let's assume remove() handles canvas cleanup enough.
+        supernovaComposer = null;
+
+
+        // Start the main galaxy background and fade in the body
+        if (!prefersReducedMotion) {
+            initGalaxy(); // Start main background
+        } else {
+             document.body.style.background = '#000205'; // Static fallback
+        }
+        
+        // Ensure body becomes visible
+         setTimeout(() => { // Add small delay just in case of race condition
+             document.body.classList.add('loaded');
+             console.log("Body class 'loaded' added.");
+         }, 50);
+
+        initMainPageAnimations(); // Start GSAP animations for content
+        console.log("Supernova finished, main page init called.");
+    }
+
+
+    // --- Three.js Enhanced Galaxy Background ---
+    function initGalaxy() {
+        const canvas = document.getElementById('galaxy-bg');
+        if (!canvas) return;
+
+        galaxyScene = new THREE.Scene();
+        galaxyCamera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 2000);
+        galaxyCamera.position.z = 10;
+
+        galaxyRenderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true });
+        galaxyRenderer.setSize(window.innerWidth, window.innerHeight);
+        galaxyRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+        // Post-processing (Subtle Bloom for Stars)
+        try {
+            const renderScene = new THREE.RenderPass(galaxyScene, galaxyCamera);
+            const bloomPass = new THREE.UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 0.6, 0.7, 0.85); // strength, radius, threshold
+            galaxyComposer = new THREE.EffectComposer(galaxyRenderer);
+            galaxyComposer.addPass(renderScene);
+            galaxyComposer.addPass(bloomPass);
+         } catch(e) {
+             console.error("Error setting up galaxy post-processing:", e);
+             galaxyComposer = null;
+         }
+
+        // Starfield ShaderMaterial
+         const starCount = 15000;
+         const starPositions = new Float32Array(starCount * 3);
+         const starColors = new Float32Array(starCount * 3);
+         const starSizes = new Float32Array(starCount);
+         const starColor = new THREE.Color();
+         for (let i = 0; i < starCount; i++) {
+             const i3 = i * 3;
+             starPositions[i3] = (Math.random() - 0.5) * 1500; starPositions[i3 + 1] = (Math.random() - 0.5) * 1500; starPositions[i3 + 2] = (Math.random() - 0.5) * 1500;
+             const type = Math.random();
+             if(type < 0.6) starColor.setHSL(Math.random() * 0.1 + 0.6, 0.9, Math.random() * 0.4 + 0.6); // Blue/White
+             else if (type < 0.8) starColor.setHSL(0.15, 0.8, Math.random() * 0.3 + 0.7); // Pale Yellow
+             else starColor.setHSL(0.0, 1.0, Math.random() * 0.3 + 0.5); // Reddish
+             starColors[i3] = starColor.r; starColors[i3 + 1] = starColor.g; starColors[i3 + 2] = starColor.b;
+             starSizes[i] = Math.random() * 1.0 + 0.5; // Slightly larger base sizes
+         }
+         const starGeometry = new THREE.BufferGeometry();
+         starGeometry.setAttribute('position', new THREE.BufferAttribute(starPositions, 3));
+         starGeometry.setAttribute('color', new THREE.BufferAttribute(starColors, 3));
+         starGeometry.setAttribute('size', new THREE.BufferAttribute(starSizes, 1));
+
+         // Use the same shaders as supernova for variable size
+         const starVertexShader = `
+          attribute float size;
+          attribute vec3 color;
+          varying vec3 vColor;
+          varying float vSize; // Pass size to fragment if needed for texture coord
+          void main() {
+            vColor = color;
+            vSize = size; // Pass size if needed
+            vec4 mvPosition = modelViewMatrix * vec4( position, 1.0 );
+            gl_PointSize = size * ( 200.0 / -mvPosition.z ); // Smaller factor for background stars
+            gl_Position = projectionMatrix * mvPosition;
+          }
+        `;
+        const starFragmentShader = `
+          varying vec3 vColor;
+          void main() {
+            float strength = 1.0 - 2.0 * distance(gl_PointCoord, vec2(0.5));
+            if (strength < 0.0) discard;
+             // Maybe make stars slightly sharper than nebula?
+            gl_FragColor = vec4(vColor, strength); // Full alpha based on gradient
+          }
+        `;
+        const starMaterial = new THREE.ShaderMaterial({
+            uniforms: {},
+            vertexShader: starVertexShader, fragmentShader: starFragmentShader,
+            vertexColors: true, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true
+        });
+        stars = new THREE.Points(starGeometry, starMaterial);
+        galaxyScene.add(stars);
+
+        // Nebula/Dust Cloud Particles (Multiple Layers)
+        nebulaParticles = new THREE.Group(); // Group to hold layers
+        const nebulaColors = [0x0affa0, 0xa060ff, 0xff40a0];
+        const nebulaOpacities = [0.06, 0.04, 0.03]; // Slightly higher opacities
+        const nebulaBaseSizes = [30, 45, 60]; // Larger sizes
+        const nebulaDistances = [-300, -500, -700];
+        const nebulaTextures = nebulaColors.map(hex => createNebulaTexture(new THREE.Color(hex))); // Pre-generate textures
+
+        for (let layer = 0; layer < nebulaColors.length; layer++) {
+            const nebulaCount = 1000; // Fewer particles per layer, but larger
+            const nebulaPositions = new Float32Array(nebulaCount * 3);
+             const nebulaSizes = new Float32Array(nebulaCount); // Individual sizes for nebula particles too
+
+            for (let i = 0; i < nebulaCount; i++) {
+                const i3 = i * 3;
+                nebulaPositions[i3] = (Math.random() - 0.5) * 800; // Wider cloud
+                nebulaPositions[i3 + 1] = (Math.random() - 0.5) * 300; // Flatter
+                nebulaPositions[i3 + 2] = (Math.random() - 0.5) * 800 + nebulaDistances[layer];
+                 nebulaSizes[i] = nebulaBaseSizes[layer] + Math.random() * 15; // Randomize size per particle
+            }
+            const nebulaGeometry = new THREE.BufferGeometry();
+            nebulaGeometry.setAttribute('position', new THREE.BufferAttribute(nebulaPositions, 3));
+             nebulaGeometry.setAttribute('size', new THREE.BufferAttribute(nebulaSizes, 1)); // Add size attribute
+
+
+            // Shader material for nebula - use texture and variable size
+             const nebulaVertexShader = `
+                attribute float size;
+                varying float vSize; // To potentially scale texture coords if needed
+                 varying vec3 vPosition; // Pass position to vary texture slightly
+                void main() {
+                    vSize = size;
+                     vPosition = position;
+                    vec4 mvPosition = modelViewMatrix * vec4( position, 1.0 );
+                     // Make nebula size less affected by distance for a more layered feel? Or keep attenuation?
+                    gl_PointSize = size * ( 800.0 / -mvPosition.z ); // Larger distance factor for nebula
+                    gl_Position = projectionMatrix * mvPosition;
+                }
+             `;
+             const nebulaFragmentShader = `
+                uniform sampler2D pointTexture;
+                 varying vec3 vPosition; // Use position hash for texture offset maybe?
+                void main() {
+                    // Use pointTexture (map) with gl_PointCoord
+                    vec4 texColor = texture2D( pointTexture, gl_PointCoord );
+                     // Discard fully transparent fragments
+                    if (texColor.a < 0.01) discard;
+                    gl_FragColor = texColor; // Use texture color and alpha
+                }
+             `;
+             const nebulaMaterial = new THREE.ShaderMaterial({
+                uniforms: {
+                    pointTexture: { value: nebulaTextures[layer] } // Pass texture
+                 },
+                vertexShader: nebulaVertexShader, fragmentShader: nebulaFragmentShader,
+                vertexColors: false, // Not using vertex colors here, texture defines color
+                blending: THREE.AdditiveBlending, depthWrite: false, transparent: true,
+                opacity: nebulaOpacities[layer] // Apply overall layer opacity
+             });
+
+
+            const nebulaLayer = new THREE.Points(nebulaGeometry, nebulaMaterial);
+            nebulaParticles.add(nebulaLayer);
+        }
+        galaxyScene.add(nebulaParticles);
+
+
+        window.addEventListener('mousemove', onMouseMove, false);
+        window.addEventListener('resize', onWindowResize, false);
+        animateGalaxy();
+    }
+
+    function createNebulaTexture(color = new THREE.Color(0x0affa0)) {
+        const size = 128;
+        const canvas = document.createElement('canvas');
+        canvas.width = size; canvas.height = size;
+        const context = canvas.getContext('2d');
+        const center = size / 2;
+        const gradient = context.createRadialGradient(center, center, 0, center, center, center);
+
+        gradient.addColorStop(0, `rgba(${Math.round(color.r*255)}, ${Math.round(color.g*255)}, ${Math.round(color.b*255)}, 0.6)`);
+        gradient.addColorStop(0.4, `rgba(${Math.round(color.r*255)}, ${Math.round(color.g*255)}, ${Math.round(color.b*255)}, 0.1)`); // Adjusted stop
+        gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+
+        context.fillStyle = gradient;
+        context.fillRect(0, 0, size, size);
+        return new THREE.CanvasTexture(canvas);
+    }
+
+    function onMouseMove(event) {
+        mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+        mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+    }
+
+    function animateGalaxy() {
+        if (!galaxyScene || !galaxyRenderer) return; // Stop if scene not initialized or cleaned up
+        requestAnimationFrame(animateGalaxy);
+
+        const elapsedTime = clock.getElapsedTime();
+
+        // Subtle rotation
+        if (stars) stars.rotation.y = elapsedTime * 0.015;
+        if (nebulaParticles) {
+             nebulaParticles.children.forEach((layer, index) => {
+                 if (layer) layer.rotation.y = elapsedTime * (0.008 - index * 0.002); // Vary rotation speed per layer
+             });
+        }
+
+        // Smoother camera parallax
+        targetCameraPos.x = mouse.x * 2.5;
+        targetCameraPos.y = mouse.y * 1.5;
+        if (galaxyCamera) {
+            galaxyCamera.position.lerp(targetCameraPos, 0.04);
+            galaxyCamera.position.z = 10;
+            galaxyCamera.lookAt(0,0,0); // Look at center
+         }
+
+         try {
+            if (galaxyComposer) {
+                 galaxyComposer.render();
+             } else if (galaxyRenderer) {
+                 galaxyRenderer.render(galaxyScene, galaxyCamera);
+             }
+         } catch(e) {
+             console.error("Error during galaxy render:", e);
+         }
+    }
+
+    function onWindowResize() {
+        const width = window.innerWidth;
+        const height = window.innerHeight;
+
+        if (galaxyCamera) {
+             galaxyCamera.aspect = width / height;
+             galaxyCamera.updateProjectionMatrix();
+        }
+        if (galaxyRenderer) galaxyRenderer.setSize(width, height);
+        if (galaxyComposer) galaxyComposer.setSize(width, height);
+
+         // Also resize supernova if it's potentially still running
+         if (supernovaCamera) {
+             supernovaCamera.aspect = width / height;
+             supernovaCamera.updateProjectionMatrix();
+         }
+         if (supernovaRenderer) supernovaRenderer.setSize(width, height);
+         if (supernovaComposer) supernovaComposer.setSize(width, height);
+
+        resizeParticleCanvas(); // Resize button particle canvas
+    }
+
+    // --- Button Click Particle Effect ---
+    const particleCanvas = document.getElementById('particle-canvas');
+    const particleCtx = particleCanvas ? particleCanvas.getContext('2d') : null; // Handle case where canvas doesn't exist
+    let clickParticles = [];
+
+    function resizeParticleCanvas() {
+        if (!particleCanvas) return;
+        particleCanvas.width = window.innerWidth;
+        particleCanvas.height = window.innerHeight;
+    }
+
+    class ClickParticle {
+        constructor(x, y, colorVarName) {
+            this.x = x; this.y = y;
+             try {
+                const style = getComputedStyle(document.body);
+                const colorMatch = colorVarName.match(/--[\w-]+/); // Find the CSS variable name
+                this.color = colorMatch ? style.getPropertyValue(colorMatch[0]).trim() : '#ffffff'; // Default white if var not found
+                if (!this.color) this.color = '#ffffff'; // Fallback if var empty
+            } catch (e) {
+                 console.warn("Could not resolve particle color var:", colorVarName, e);
+                 this.color = '#ffffff';
+            }
+            this.size = Math.random() * 5 + 2;
+            this.speedX = (Math.random() - 0.5) * 6;
+            this.speedY = (Math.random() - 0.5) * 6;
+            this.life = 1;
+            this.gravity = 0.05;
+            this.drag = 0.98;
+        }
+        update() {
+            this.speedX *= this.drag;
+            this.speedY *= this.drag;
+            this.speedY += this.gravity;
+            this.x += this.speedX; this.y += this.speedY;
+            this.life -= 0.025;
+            this.size *= 0.97;
+        }
+        draw() {
+            if (!particleCtx) return;
+            particleCtx.fillStyle = this.color;
+            particleCtx.globalAlpha = Math.max(0, this.life);
+            particleCtx.beginPath();
+            particleCtx.arc(this.x, this.y, Math.max(0, this.size), 0, Math.PI * 2);
+            particleCtx.fill();
+        }
+    }
+
+    function createClickParticles(x, y, colorVarName) {
+        if (prefersReducedMotion || !particleCtx) return;
+        const count = 25;
+        for (let i = 0; i < count; i++) {
+            clickParticles.push(new ClickParticle(x, y, colorVarName));
+        }
+    }
+
+    let particleAnimationFrameId = null; // Store animation frame ID
+    function animateClickParticles() {
+         particleAnimationFrameId = requestAnimationFrame(animateClickParticles); // Request next frame first
+
+        if (!particleCtx || !particleCanvas) return; // Guard clause
+        particleCtx.clearRect(0, 0, particleCanvas.width, particleCanvas.height);
+
+        for (let i = clickParticles.length - 1; i >= 0; i--) {
+            clickParticles[i].update();
+            clickParticles[i].draw();
+            if (clickParticles[i].life <= 0 || clickParticles[i].size <= 0.1) {
+                clickParticles.splice(i, 1);
+            }
+        }
+        particleCtx.globalAlpha = 1; // Reset alpha
+        
+        // Stop animating if no particles left? Maybe not, keep loop running cheaply.
+        // if (clickParticles.length === 0) {
+        //     cancelAnimationFrame(particleAnimationFrameId);
+        //     particleAnimationFrameId = null;
+        //     console.log("Particle animation stopped.");
+        // }
+    }
+
+    // --- GSAP Animations Setup ---
+    function initMainPageAnimations() {
+         if (prefersReducedMotion) {
+             console.log("Reduced motion preferred, applying static styles.");
+             gsap.set(".gsap-fade-in, .gsap-slide-in-left, .gsap-slide-in-right, .gsap-scale-up, .gsap-rotate-in, #hero-headline .char, .hud-element, .process-step", { opacity: 1, transform: "none", clearProps: "all" });
+             gsap.set(".process-timeline", { autoAlpha: 1 });
+             const timelineBefore = document.querySelector('.process-timeline');
+             if(timelineBefore) timelineBefore.classList.add('visible'); // Force :before to show statically
+             return;
+         };
+         console.log("Initializing GSAP animations...");
+         gsap.registerPlugin(ScrollTrigger);
+
+         // HUD Animation
+         gsap.to(".hud-element", {
+             opacity: 0.6, // Keep them slightly faded for HUD feel
+             y: 0,
+             duration: 0.8,
+             stagger: 0.2,
+             delay: 0.5, // Delay after body fade in starts
+             ease: "power2.out"
+         });
+
+        // Hero Headline Character Animation
+        const headline = document.getElementById('hero-headline');
+        if (headline) {
+             const text = headline.getAttribute('data-text') || headline.textContent; // Fallback to textContent
+             if (text && headline.children.length === 0) { // Check if chars not already created
+                 headline.textContent = ''; // Clear existing text only if needed
+                 text.split('').forEach((char) => {
+                     const span = document.createElement('span');
+                     span.className = 'char';
+                     span.textContent = char === ' ' ? '\u00A0' : char;
+                     span.style.opacity = 0; // Start invisible explicitly for GSAP
+                     headline.appendChild(span);
+                 });
+
+                 gsap.fromTo(".char",
+                     { opacity: 0, y: 20, z: -50, rotationX: -90, skewX: 15 },
+                     {
+                          opacity: 1, y: 0, z: 0, rotationX: 0, skewX: 0,
+                          duration: 0.8,
+                          stagger: { amount: 0.7, from: "random" },
+                          delay: 0.8, // After HUD starts
+                          ease: "back.out(1.7)",
+                          onComplete: () => gsap.set(".char", { clearProps: "transform,opacity" }) // Clear transforms after completion
+                      }
+                 );
+             } else {
+                 gsap.to("#hero-headline", { opacity: 1, delay: 0.8 }); // Just fade in if structure exists
+             }
+        } else {
+             console.warn("Hero headline element not found.");
+        }
+
+
+        // General Content Fade/Slide In Animations
+        gsap.utils.toArray('section').forEach((section) => {
+            // Animate the section container itself slightly for subtle staggering
+            gsap.from(section, {
+                opacity: 0,
+                 y: 20,
+                duration: 0.5,
+                ease: "power2.out",
+                scrollTrigger: {
+                    trigger: section,
+                    start: "top 85%", // Trigger earlier for the section itself
+                    toggleActions: "play none none none",
+                    once: true // Ensure section animates only once
+                }
+            });
+
+            // Animate elements within the section with stagger
+             const elems = section.querySelectorAll('.gsap-fade-in, .gsap-slide-in-left, .gsap-slide-in-right, .gsap-scale-up, .gsap-rotate-in, .data-slate');
+            
+             gsap.from(elems, {
+                opacity: 0,
+                y: 40, // Default slide up
+                scale: 0.98, // Default subtle scale
+                duration: 0.7,
+                stagger: 0.1, // Reduced stagger for smoother flow
+                ease: "power3.out",
+                scrollTrigger: {
+                    trigger: section,
+                    start: "top 80%", // Trigger elements slightly after section starts animating
+                    toggleActions: "play none none none",
+                    // markers: true, // Debugging
+                    onEnter: () => playSound('reveal', 'G3', '16n', Math.random() * 0.1) // Sound on reveal
+                },
+                // Apply specific transforms based on class AFTER the default 'from' state is set
+                onStart: function() { // Using onStart to ensure correct base state before applying class-specific overrides
+                     this.targets().forEach(el => {
+                         if (el.classList.contains('gsap-slide-in-left')) gsap.set(el, { x: -80, y: 0, scale: 1 });
+                         else if (el.classList.contains('gsap-slide-in-right')) gsap.set(el, { x: 80, y: 0, scale: 1 });
+                         else if (el.classList.contains('gsap-rotate-in')) gsap.set(el, { rotate: -10, y:0, scale: 0.9 });
+                         else if (el.classList.contains('gsap-scale-up')) gsap.set(el, { scale: 0.8, y:0 });
+                         else gsap.set(el, { x:0, rotate:0}); // Ensure others don't inherit xy if not specified
+                    });
+                }
+            });
+        });
+
+        // Process Timeline Animation
+        const timeline = document.querySelector('.process-timeline');
+        if (timeline) {
+            const steps = gsap.utils.toArray('.process-step');
+
+             gsap.to(timeline, { // Using the parent to trigger
+                 scrollTrigger: {
+                     trigger: timeline,
+                     start: "top 70%",
+                     end: "bottom 80%",
+                     toggleClass: {targets: timeline, className: "visible"}, // Animates the ::before via CSS
+                     onEnter: () => playSound('hover', 'C3', '4n'),
+                     // markers: true
+                 }
+             });
+
+            steps.forEach((step, index) => {
+                gsap.from(step, // Use 'from' for simplicity here
+                    {
+                        opacity: 0, x: -50, duration: 0.6, ease: "power2.out",
+                        scrollTrigger: {
+                            trigger: step,
+                            start: "top 85%",
+                            // markers: true,
+                             toggleClass: {targets: step, className: "is-active"},
+                            onEnter: () => playSound('hover', `C${4 + index % 3}`, '16n', 0.1 * index),
+                             onLeaveBack: () => step.classList.remove('is-active')
+                        }
+                    }
+                );
+            });
+        }
+         console.log("GSAP animations initialized.");
+    }
+
+
+    // --- Event Listeners & Final Initializations ---
+    document.addEventListener('DOMContentLoaded', () => {
+        console.log("DOM Content Loaded.");
+        
+        // Critical: Trigger Supernova or skip based on reduced motion
+        if (!prefersReducedMotion) {
+            console.log("Initializing Supernova sequence...");
+             initSupernova();
+         } else {
+            console.log("Reduced Motion detected, skipping Supernova and initializing directly.");
+            // Manually trigger the sequence that finishSupernova would call
+            document.body.style.opacity = 1; // Ensure body is instantly visible
+            document.body.classList.add('loaded'); // Add class just in case
+             if (!prefersReducedMotion) { initGalaxy();} else { document.body.style.background = '#000205'; } // Init galaxy or set static background
+            initMainPageAnimations(); // Initialize GSAP animations (will apply static styles if reduced motion)
+             console.log("Direct initialization complete for reduced motion.");
+         }
+
+        resizeParticleCanvas(); // Size particle canvas initially
+        if (particleCtx) animateClickParticles(); // Start click particle animation loop only if canvas context exists
+
+        // --- Add Interaction Listeners ---
+
+        // Button & Link Sound/Particle Interactions
+        document.querySelectorAll('.btn').forEach(button => {
+            button.addEventListener('click', (e) => {
+                let particleColorVar = '--color-accent';
+                let soundType = 'click'; let soundNote = 'E4';
+                 if (button.classList.contains('btn-directive')) { particleColorVar = '--color-secondary'; soundType = 'ctaClick'; }
+                 else if (button.classList.contains('btn-secondary-ops')) { particleColorVar = '--color-tertiary'; soundNote = 'G4'; }
+                 playSound(soundType, soundNote);
+                createClickParticles(e.clientX, e.clientY, particleColorVar);
+            });
+            button.addEventListener('mouseenter', () => playSound('hover', 'C4', '32n'));
+        });
+
+        document.querySelectorAll('.nav-link, #tactical-overview a').forEach(link => {
+             link.addEventListener('mouseenter', () => playSound('hover', 'D4', '32n'));
+             link.addEventListener('click', () => playSound('click', 'F4', '16n'));
+        });
+        // Add hover to interactive elements in data slates if desired
+         document.querySelectorAll('.data-slate a').forEach(link => {
+            link.addEventListener('mouseenter', () => playSound('hover', 'A4', '32n'));
+        });
+
+
+        // Form Submission Handler (Simulation)
+        const form = document.getElementById('interface-request-form');
+        const messageDiv = document.getElementById('form-message-interface');
+        const loaderIcon = `<svg class="animate-spin h-5 w-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>`;
+        const successIcon = `<svg class="h-5 w-5 mr-2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" /></svg>`;
+        const errorIcon = `<svg class="h-5 w-5 mr-2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" /></svg>`;
+
+        if (form && messageDiv) {
+            form.addEventListener('submit', function(event) {
+                event.preventDefault();
+                console.log("Form submitted (simulation).");
+                // Reset classes before adding new one
+                messageDiv.className = 'form-message-interface'; // Reset to base class first
+                messageDiv.classList.add('form-message-loading'); // Add loading class
+                messageDiv.innerHTML = `${loaderIcon} Encrypting & Transmitting...`;
+                messageDiv.style.display = 'flex'; // Ensure visible
+                playSound('click', 'A4');
+
+                setTimeout(() => {
+                    const isSuccess = Math.random() > 0.15;
+                     // Important: Remove loading class before adding success/error
+                    messageDiv.classList.remove('form-message-loading');
+
+                    if (isSuccess) {
+                        messageDiv.classList.add('form-message-success');
+                        messageDiv.innerHTML = `${successIcon} Transmission Confirmed. Standby for Response.`;
+                        form.reset();
+                        playSound('success');
+                    } else {
+                        messageDiv.classList.add('form-message-error');
+                        messageDiv.innerHTML = `${errorIcon} Error: Signal Corruption. Retry or use Holo-Call.`;
+                        playSound('error');
+                    }
+                    console.log("Form simulation complete:", isSuccess ? "Success" : "Error");
+
+                     // Optional: Hide message after a few seconds
+                     setTimeout(() => {
+                         messageDiv.style.display = 'none';
+                         messageDiv.className = 'form-message-interface'; // Reset classes completely
+                     }, 5000);
+
+                }, 1800);
+            });
+        } else {
+            console.warn("Form or Message Div not found.");
+        }
+
+        // Footer Year
+        try {
+            const yearSpan = document.getElementById('current-year');
+            const yearSpanHUD = document.getElementById('current-year-hud');
+            const currentYear = new Date().getFullYear();
+            if (yearSpan) yearSpan.textContent = currentYear;
+            if (yearSpanHUD) yearSpanHUD.textContent = currentYear;
+         } catch(e) {
+             console.warn("Error setting footer year:", e);
+         }
+        
+        console.log("Initialization scripts complete.");
+
+    }); // End DOMContentLoaded
+
+</script>
+
+</body>
+</html>
